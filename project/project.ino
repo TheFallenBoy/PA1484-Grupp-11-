@@ -113,6 +113,7 @@ void setup()
 // Must have function: Loop runs continously on device after setup
 void loop()
 {
+  //Hello world test	
   lv_timer_handler();
   delay(5);
 }
