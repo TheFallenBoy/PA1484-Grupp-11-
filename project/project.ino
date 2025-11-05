@@ -21,6 +21,12 @@ static lv_obj_t* t1_label;
 static lv_obj_t* t2_label;
 static bool t2_dark = false;  // start tile #2 in light mode
 
+//API
+HTTPClient http;
+static const String API_URL = " ";
+
+
+
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)
 {
@@ -70,6 +76,7 @@ static void create_ui()
     apply_tile_colors(t2, t2_label, /*dark=*/false);
     lv_obj_add_flag(t2, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(t2, on_tile2_clicked, LV_EVENT_CLICKED, NULL);
+    
   }
 }
 
@@ -93,6 +100,33 @@ static void connect_wifi()
   }
 }
 
+static String ConnectAndGetFromAPI()
+{
+  Serial.print("[HTTP] begin...");
+  http.begin(API_URL);
+  Serial.print("[HTTP] GET...");
+  int httpCode = http.GET();
+  String toReturn = "might not have worked (Object toReturn)"; //placeholder...
+  if(httpCode > 0) // if the code is negative means the httprequest didn't work.
+  {
+    Serial.printf("[HTTP] Get... code:%d\n", httpCode);
+    if(httpCode = HTTP_CODE_OK)
+    {
+      String payload = http.getString();
+      Serial.println(payload);
+      toReturn = payload;
+    }
+  }
+  else
+  {
+    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+  }
+
+  http.end();
+
+  return toReturn;
+}
+
 // Must have function: Setup is run once on startup
 void setup()
 {
@@ -102,18 +136,19 @@ void setup()
   if (!amoled.begin()) {
     Serial.println("Failed to init LilyGO AMOLED.");
     while (true) delay(1000);
+    
   }
-
   beginLvglHelper(amoled);   // init LVGL for this board
-
   create_ui();
   connect_wifi();
+  
 }
 
 // Must have function: Loop runs continously on device after setup
 void loop()
 {
-  //Hello world test	
+  //Hello world test
   lv_timer_handler();
   delay(5);
 }
+
