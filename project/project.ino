@@ -9,8 +9,8 @@
 #include <lvgl.h>
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "xxxx";
-static const char* WIFI_PASSWORD = "xxxx";
+static const char* WIFI_SSID     = "Säpo spårningsbil";
+static const char* WIFI_PASSWORD = "Internet";
 
 LilyGo_Class amoled;
 
