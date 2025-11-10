@@ -18,9 +18,11 @@ static lv_obj_t* tileview;
 static lv_obj_t* t1;
 static lv_obj_t* t2;
 static lv_obj_t* t3;
+static lv_obj_t* t4;
 static lv_obj_t* t1_label;
 static lv_obj_t* t2_label;
 static lv_obj_t* t3_label;
+static lv_obj_t* t4_label;
 static bool t2_dark = false;  // start tile #2 in light mode
 
 //API
@@ -54,16 +56,18 @@ static void create_ui()
   lv_obj_set_scrollbar_mode(tileview, LV_SCROLLBAR_MODE_OFF);
 
   // Add two horizontal tiles
-  t1 = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_HOR | LV_DIR_VER);
-  t2 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR);
+  t1 = lv_tileview_add_tile(tileview, 1, 1, LV_DIR_HOR | LV_DIR_VER); //forecast tile
+  t2 = lv_tileview_add_tile(tileview, 2, 1, LV_DIR_HOR | LV_DIR_VER); //history tile
+  t3 = lv_tileview_add_tile(tileview, 0, 1, LV_DIR_HOR | LV_DIR_VER); //settings tile
   //vertical tile 
-  t3 = lv_tileview_add_tile(tileview, 0, 1, LV_DIR_VER);
+  t4 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_VER); //Boot tile
 
+  
 
   // Tile #1
   {
     t1_label = lv_label_create(t1);
-    lv_label_set_text(t1_label, "Weather forecast data");
+    lv_label_set_text(t1_label, "COOL Weather forecast data");
     lv_obj_set_style_text_font(t1_label, &lv_font_montserrat_28, 0);
     lv_obj_center(t1_label);
     apply_tile_colors(t1, t1_label, /*dark=*/false);
@@ -88,6 +92,14 @@ static void create_ui()
     lv_obj_set_style_text_font(t3_label, &lv_font_montserrat_28, 0);
     lv_obj_center(t3_label);
     apply_tile_colors(t3, t3_label, /*dark=*/false);
+  }
+
+  {
+    t4_label = lv_label_create(t4);
+    lv_label_set_text(t4_label, "boot tile?");
+    lv_obj_set_style_text_font(t4_label, &lv_font_montserrat_28, 0);
+    lv_obj_center(t4_label);
+    apply_tile_colors(t4, t4_label, /*dark=*/false);
   }
 }
 
