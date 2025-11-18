@@ -9,8 +9,8 @@
 #include <lvgl.h>
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "Säpo spårningsbil";
-static const char* WIFI_PASSWORD = "Internet";
+static const char* WIFI_SSID = "#Telia-D697E0";
+static const char* WIFI_PASSWORD = "c7J@8@w#p1%GYd2K";
 
 LilyGo_Class amoled;
 
@@ -27,7 +27,7 @@ static bool t2_dark = false;  // start tile #2 in light mode
 
 //API
 HTTPClient http;
-static const String API_URL = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/16.158/lat/58.5812/data.json";
+static const String API_URL = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/15.8798/lat/56.1607/data.json?timeseries?parameters=air_temperature";
 
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)
@@ -45,6 +45,7 @@ static void on_tile2_clicked(lv_event_t* e)
   LV_UNUSED(e);
   t2_dark = !t2_dark;
   apply_tile_colors(t2, t2_label, t2_dark);
+  
 }
 
 // Function: Creates UI
@@ -60,11 +61,11 @@ static void create_ui()
   t1 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR); //forecast tile
   t2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR); //history tile
   t3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR); //settings tile
-  String ApiResponse =  ConnectAndGetFromAPI();
+  
   // STARTING SCREEN!
   {
     t0_label = lv_label_create(t0);
-    
+    String ApiResponse =  ConnectAndGetFromAPI();
     if(ApiResponse.startsWith("{")){
       lv_label_set_text(t0_label, "API works!");
       lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
@@ -117,14 +118,17 @@ static void create_ui()
   lv_obj_set_style_pad_all(grid, 0, 0);
   lv_obj_set_style_border_width(grid, 0, 0);
 
+    
   // Example data, to be replaced 
   const char* days[7]  = {"Today", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
   const char* parameters[7] = {"20°", "14°", "16°", "18°", "17°", "15°", "19°"};
   const char* icons[7] = {"S", "C", "S", "R", "C", "S", "R"}; 
- 
-
+  
   // loop that creates 7 rows of cells, with three columns
   for(int r = 0; r < 7; r++) {
+
+    
+
       // Choose font size: bigger for first (today) row
       const lv_font_t* font = (r == 0) ? &lv_font_montserrat_36 : &lv_font_montserrat_26;
 
@@ -152,7 +156,7 @@ static void create_ui()
       lv_obj_set_style_border_width(param_obj, 0, 0);
       //text
       lv_obj_t* param_label = lv_label_create(param_obj);
-      lv_label_set_text(param_label, parameters[r]);
+      lv_label_set_text(param_label, parameters[r]); 
       lv_obj_set_style_text_font(param_label, font, 0);
       lv_obj_center(param_label);
 
@@ -196,7 +200,7 @@ static void create_ui()
 
 
 // Function: Connects to WIFI
-static void connect_wifi()
+static String connect_wifi()
 {
   Serial.printf("Connecting to WiFi SSID: %s\n", WIFI_SSID);
   WiFi.mode(WIFI_STA);
@@ -210,36 +214,47 @@ static void connect_wifi()
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print("WiFi connected.");
+    return "Connected";
   } else {
     Serial.println("WiFi could not connect (timeout).");
   }
+
+  return " ";
 }
 
 static String ConnectAndGetFromAPI()
 {
-  Serial.print("[HTTP] begin...");
-  http.begin(API_URL);
-  Serial.print("[HTTP] GET...");
-  int httpCode = http.GET();
-  String toReturn = "{}"; //placeholder...
-  if(httpCode > 0) // if the code is negative means the httprequest didn't work.
-  {
-    Serial.printf("[HTTP] Get... code:%d\n", httpCode);
-    if(httpCode == HTTP_CODE_OK)
-    {
-      String payload = http.getString();
-      Serial.println(payload);
-      toReturn = payload;
+    // Bättre att deklarera payload tidigt
+    String payload = ""; 
+    
+    Serial.print("[HTTP] begin...");
+    http.begin(API_URL);
+    
+    Serial.print("[HTTP] GET...");
+    int httpCode = http.GET();
+    Serial.println(httpCode);
+    Serial.flush();
+    
+    // KONTROLLERA OM ANROPET LYCKADES (positiv kod, inklusive 200)
+    if (httpCode > 0) {
+        
+        if (httpCode == 200) { 
+            // Endast om status är 200 hämtar vi strängen
+            payload = http.getString();
+            Serial.println(payload);
+        } else {
+            // Skriver ut statuskoden om den är t.ex. 404
+            Serial.printf("HTTP-fel: %d\n", httpCode);
+        }
+    } else {
+        // Detta fångar nätverksfel (t.ex. DNS-fel, anslutningsfel)
+        Serial.printf("[HTTP] Anslutningsfel: %s\n", http.errorToString(httpCode).c_str());
     }
-  }
-  else
-  {
-    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-  }
 
-  http.end();
-
-  return toReturn;
+    // AVSLUTA ALLTID KLIENTEN
+    http.end();
+    
+    return payload; 
 }
 
 // Must have function: Setup is run once on startup
@@ -254,8 +269,9 @@ void setup()
     
   }
   beginLvglHelper(amoled);   // init LVGL for this board
-  create_ui();
   connect_wifi();
+  delay(1000);
+  create_ui();
   
 }
 
