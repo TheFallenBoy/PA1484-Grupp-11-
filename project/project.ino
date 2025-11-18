@@ -27,7 +27,7 @@ static bool t2_dark = false;  // start tile #2 in light mode
 
 //API
 HTTPClient http;
-static const String API_URL = " ";
+static const String API_URL = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/16.158/lat/58.5812/data.json";
 
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)
@@ -60,14 +60,24 @@ static void create_ui()
   t1 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR); //forecast tile
   t2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR); //history tile
   t3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR); //settings tile
-
-  // Tile #0
+  String ApiResponse =  ConnectAndGetFromAPI();
+  // STARTING SCREEN!
   {
     t0_label = lv_label_create(t0);
-    lv_label_set_text(t0_label, "boot tile?");
-    lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
-    lv_obj_center(t0_label);
-    apply_tile_colors(t0, t0_label, /*dark=*/false);
+    
+    if(ApiResponse.startsWith("{")){
+      lv_label_set_text(t0_label, "API works!");
+      lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
+      lv_obj_center(t0_label);
+      apply_tile_colors(t0, t0_label, /*dark=*/false);
+    }
+    else {
+      lv_label_set_text(t0_label, "Error");
+      lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
+      lv_obj_center(t0_label);
+      apply_tile_colors(t0, t0_label, /*dark=*/false);
+    }
+    
   }
 
   // Tile #1 WEATHER FORECAST TILE
@@ -111,6 +121,7 @@ static void create_ui()
   const char* days[7]  = {"Today", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
   const char* parameters[7] = {"20°", "14°", "16°", "18°", "17°", "15°", "19°"};
   const char* icons[7] = {"S", "C", "S", "R", "C", "S", "R"}; 
+ 
 
   // loop that creates 7 rows of cells, with three columns
   for(int r = 0; r < 7; r++) {
@@ -210,11 +221,11 @@ static String ConnectAndGetFromAPI()
   http.begin(API_URL);
   Serial.print("[HTTP] GET...");
   int httpCode = http.GET();
-  String toReturn = "might not have worked (Object toReturn)"; //placeholder...
+  String toReturn = "{}"; //placeholder...
   if(httpCode > 0) // if the code is negative means the httprequest didn't work.
   {
     Serial.printf("[HTTP] Get... code:%d\n", httpCode);
-    if(httpCode = HTTP_CODE_OK)
+    if(httpCode == HTTP_CODE_OK)
     {
       String payload = http.getString();
       Serial.println(payload);
@@ -252,6 +263,7 @@ void setup()
 void loop()
 {
   //Hello world test
+ 
   lv_timer_handler();
   delay(5);
 }
