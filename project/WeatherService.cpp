@@ -75,7 +75,7 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitu
 
     if (payload.isEmpty()) return forecastData;
 
-    // Filter för att spara minne
+    // Filter to save memory. The API call might have been to big for the ESP-32 chip...
     JsonDocument filter;
     filter["timeSeries"][0]["time"] = true;
     filter["timeSeries"][0]["data"]["air_temperature"] = true;
