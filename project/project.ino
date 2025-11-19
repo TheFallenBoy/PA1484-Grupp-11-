@@ -7,10 +7,11 @@
 #include <LilyGo_AMOLED.h>
 #include <LV_Helper.h>
 #include <lvgl.h>
+#include "WeatherService.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "Säpo spårningsbil";
-static const char* WIFI_PASSWORD = "Internet";
+static const char* WIFI_SSID     = "BTH_Guest";
+static const char* WIFI_PASSWORD = "oliv95lila";
 
 LilyGo_Class amoled;
 
@@ -27,7 +28,7 @@ static bool t2_dark = false;  // start tile #2 in light mode
 
 //API
 HTTPClient http;
-static const String API_URL = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/16.158/lat/58.5812/data.json";
+static const String API_URL = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/15.590337/lat/56.182822/data.json?timeseries?parameters=air_temperature";
 
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)
@@ -54,41 +55,37 @@ static void create_ui()
   tileview = lv_tileview_create(lv_scr_act());
   lv_obj_set_size(tileview, lv_disp_get_hor_res(NULL), lv_disp_get_ver_res(NULL));
   lv_obj_set_scrollbar_mode(tileview, LV_SCROLLBAR_MODE_OFF);
+   
+
 
   // Add tile positions in a grid
   t0 = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_HOR); //Boot tile
   t1 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR); //forecast tile
   t2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR); //history tile
   t3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR); //settings tile
-  String ApiResponse =  ConnectAndGetFromAPI();
-  // STARTING SCREEN!
+  
+  // STARTING SCREEN! Just nu visar den bara om API:n funkar.
   {
     t0_label = lv_label_create(t0);
-    
-    if(ApiResponse.startsWith("{")){
-      lv_label_set_text(t0_label, "API works!");
-      lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
-      lv_obj_center(t0_label);
-      apply_tile_colors(t0, t0_label, /*dark=*/false);
-    }
-    else {
-      lv_label_set_text(t0_label, "Error");
-      lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
-      lv_obj_center(t0_label);
-      apply_tile_colors(t0, t0_label, /*dark=*/false);
-    }
+    lv_label_set_text(t0_label, "Grupp 11 V.3");
+    lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
+    lv_obj_center(t0_label);
+    apply_tile_colors(t0, t0_label, /*dark=*/false);
     
   }
 
   // Tile #1 WEATHER FORECAST TILE
 {
+
+   WeatherService ws;
+   std::vector<ForecastDataPoint> data = ws.GetSevenDayForecast(15.590337,56.182822);
     // City title
     t1_label = lv_label_create(t1);
     lv_label_set_text(t1_label, "Karlskrona");
     lv_obj_set_style_text_font(t1_label, &lv_font_montserrat_40, 0);
     lv_obj_align(t1_label, LV_ALIGN_TOP_LEFT, 6, 10);
     apply_tile_colors(t1, t1_label, /*dark=*/false);
-
+    
     // Parameter title
     lv_obj_t* t1_sub = lv_label_create(t1);
     lv_label_set_text(t1_sub, "Temperature");
@@ -152,7 +149,7 @@ static void create_ui()
       lv_obj_set_style_border_width(param_obj, 0, 0);
       //text
       lv_obj_t* param_label = lv_label_create(param_obj);
-      lv_label_set_text(param_label, parameters[r]);
+      lv_label_set_text_fmt(param_label,"%.1f °C", data[r].temp);
       lv_obj_set_style_text_font(param_label, font, 0);
       lv_obj_center(param_label);
 
@@ -215,33 +212,6 @@ static void connect_wifi()
   }
 }
 
-static String ConnectAndGetFromAPI()
-{
-  Serial.print("[HTTP] begin...");
-  http.begin(API_URL);
-  Serial.print("[HTTP] GET...");
-  int httpCode = http.GET();
-  String toReturn = "{}"; //placeholder...
-  if(httpCode > 0) // if the code is negative means the httprequest didn't work.
-  {
-    Serial.printf("[HTTP] Get... code:%d\n", httpCode);
-    if(httpCode == HTTP_CODE_OK)
-    {
-      String payload = http.getString();
-      Serial.println(payload);
-      toReturn = payload;
-    }
-  }
-  else
-  {
-    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-  }
-
-  http.end();
-
-  return toReturn;
-}
-
 // Must have function: Setup is run once on startup
 void setup()
 {
@@ -254,8 +224,8 @@ void setup()
     
   }
   beginLvglHelper(amoled);   // init LVGL for this board
-  create_ui();
   connect_wifi();
+  create_ui();
   
 }
 
