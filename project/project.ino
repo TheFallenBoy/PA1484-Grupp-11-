@@ -8,11 +8,11 @@
 #include <LV_Helper.h>
 #include <lvgl.h>
 #include "WeatherService.h"
-//#include "secrets.h"
+#include "secrets.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-//static const char* WIFI_SSID     = "";
-//static const char* WIFI_PASSWORD = "";
+static const char* WIFI_SSID     = "";
+static const char* WIFI_PASSWORD = "";
 
 LilyGo_Class amoled;
 
@@ -196,9 +196,9 @@ static void create_ui()
 // Function: Connects to WIFI
 static void connect_wifi()
 {
-  Serial.printf("Connecting to WiFi SSID: %s\n", WIFI_PASSWORD);
+  Serial.printf("Connecting to WiFi SSID: %s\n", WIFI_SSID);
   WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_PASSWORD, WIFI_PASSWORD);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   const uint32_t start = millis();
   while (WiFi.status() != WL_CONNECTED && (millis() - start) < 15000) {
