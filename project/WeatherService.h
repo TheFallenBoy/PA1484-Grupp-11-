@@ -8,6 +8,7 @@
 struct ForecastDataPoint {
     float temp;
     String time;
+    const char* weekday;
 };
 
 class WeatherService {
@@ -23,6 +24,10 @@ private:
     
     // Anropar nätverket
     String APIRequest(String URL);
+
+    void SetWhatDay(struct ForecastDataPoint &datapoint);
+
+    int getWeekday(int year, int month, int day);
 };
 
 #endif

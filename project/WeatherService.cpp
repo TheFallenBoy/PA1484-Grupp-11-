@@ -8,7 +8,7 @@ WeatherService::WeatherService()
 
 String WeatherService::BuildURL(float longitude, float latitude)
 {
-    // Din specifika URL (snow1g)
+    // specifika URL (snow1g)
     String url = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/";
     url += String(longitude, 6);
     url += "/lat/";
@@ -35,6 +35,35 @@ String WeatherService::APIRequest(String URL)
 
     http.end();
     return payload;
+}
+//AI generated with gemini Pro 3
+int WeatherService::getWeekday(int year, int month, int day) {
+    static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+    
+    // Adjust year for Jan/Feb (they are treated as months 13/14 of previous year)
+    if (month < 3) {
+        year -= 1;
+    }
+    
+    // Tomohiko Sakamoto's algorithm
+    return (year + year/4 - year/100 + year/400 + t[month-1] + day + 6 ) % 7; //it was giving us one day ahead so we needed to subtract -1 which is the same as adding 6 in mod 7
+}
+
+void WeatherService::SetWhatDay(struct ForecastDataPoint &dataPoint)
+{
+    String date = dataPoint.time;
+    //Format of the string is e.g 2025-11-19T18:00:00Z
+    String yearStr = date.substring(0,4); //picks character 0 - 4
+    String monthStr = date.substring(5,7);
+    String dayStr = date.substring(8,10);
+    int year = yearStr.toInt();
+    int month = monthStr.toInt();
+    int day = dayStr.toInt();
+    int weekdayNumber = getWeekday(year,month,day);
+
+    const static char* weekDays[] = {"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
+    dataPoint.weekday = weekDays[weekdayNumber];
+
 }
 
 std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitude, float latitude)
@@ -74,18 +103,38 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitu
 
         // 2. Kolla om tiden innehåller "T12:00:00"
         // SMHI returnerar alltid ISO 8601 format.
-        if (t.indexOf("T12:00:00") >= 0) {
+        if (forecastData.size() == 0)
+        { 
+            //week day property will always be Today
+            ForecastDataPoint point;
+            point.time = t; 
+            
+            point.temp = item["data"]["air_temperature"];
+            point.weekday = "Today";
+            forecastData.push_back(point);
+
+            Serial.println(point.time);
+            Serial.println(point.temp);
+            Serial.println(point.weekday);
+
+        }
+        else if (t.indexOf("T12:00:00") > 0) {
             
             ForecastDataPoint point;
             point.time = t; 
             
             point.temp = item["data"]["air_temperature"];
-            
+            SetWhatDay(point);
             forecastData.push_back(point);
+            Serial.println(point.time);
+            Serial.println(point.temp);
+            Serial.println(point.weekday);
         }
     }
 
     Serial.printf("[Info] Hittade %d dagar kl 12:00.\n", forecastData.size());
+
+
 
     return forecastData; 
 }

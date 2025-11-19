@@ -10,8 +10,8 @@
 #include "WeatherService.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "BTH_Guest";
-static const char* WIFI_PASSWORD = "oliv95lila";
+static const char* WIFI_SSID     = "";
+static const char* WIFI_PASSWORD = "";
 
 LilyGo_Class amoled;
 
@@ -135,7 +135,7 @@ static void create_ui()
       lv_obj_set_style_border_width(day_obj, 0, 0);
       //text
       lv_obj_t* day_label = lv_label_create(day_obj);
-      lv_label_set_text(day_label, days[r]);
+      lv_label_set_text_fmt(day_label,"%s" , data[r].weekday);
       lv_obj_set_style_text_font(day_label, font, 0);
       lv_obj_center(day_label);
 
