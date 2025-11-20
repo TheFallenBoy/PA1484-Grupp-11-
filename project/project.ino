@@ -11,8 +11,8 @@
 //#include "secrets.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "BTH_Guest";
-static const char* WIFI_PASSWORD = "oliv95lila";
+static const char* WIFI_SSID     = "xxxxx";
+static const char* WIFI_PASSWORD = "xxx";
 
 LilyGo_Class amoled;
 
@@ -46,6 +46,32 @@ static void on_tile2_clicked(lv_event_t* e)
   apply_tile_colors(t2, t2_label, t2_dark);
 }
 
+// 1. DECLARE IMAGES
+// These names must match the "C array name" from the converter (usually the filename)
+LV_IMG_DECLARE(img_sun);
+LV_IMG_DECLARE(img_cloud);
+LV_IMG_DECLARE(img_rain);
+LV_IMG_DECLARE(img_snow);
+
+// 2. MAPPING FUNCTION
+// Maps SMHI symbol code (1-27) to your 4 icons
+const lv_img_dsc_t* get_icon_by_id(int id) {
+    // SMHI Wsymb2 codes:
+    // 1-3: Clear/Variable (Sun)
+    // 4-7: Cloudy/Fog (Cloud)
+    // 8-11, 18-21: Rain/Thunder (Rain)
+    // 12-17, 22-27: Snow/Sleet (Snow)
+    
+    if (id >= 1 && id <= 3) return &img_sun;
+    if (id >= 4 && id <= 7) return &img_cloud;
+    if ((id >= 8 && id <= 11) || (id >= 18 && id <= 21)) return &img_rain;
+    if ((id >= 12 && id <= 17) || (id >= 22 && id <= 27)) return &img_snow;
+    
+    // Default fallback
+    return &img_cloud; 
+}
+
+
 // Function: Creates UI
 static void create_ui()
 { 
@@ -73,7 +99,7 @@ static void create_ui()
   }
 
   // Tile #1 WEATHER FORECAST TILE
-{
+  {
 
    WeatherService ws;
    std::vector<ForecastDataPoint> data = ws.GetSevenDayForecast(15.590337,56.182822);
@@ -90,36 +116,37 @@ static void create_ui()
     lv_obj_set_style_text_font(t1_sub, &lv_font_montserrat_32, 0);
     lv_obj_align_to(t1_sub, t1_label, LV_ALIGN_OUT_BOTTOM_LEFT,6, 6);
 
-  // GRID DEFINTIONS
-  static lv_coord_t col_dsc[] = {LV_GRID_FR(3), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  static lv_coord_t row_dsc[] = {LV_GRID_FR(2), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-  lv_obj_t* grid = lv_obj_create(t1);
-  lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
+    // GRID DEFINTIONS
+    static lv_coord_t col_dsc[] = {LV_GRID_FR(3), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    static lv_coord_t row_dsc[] = {LV_GRID_FR(2), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    lv_obj_t* grid = lv_obj_create(t1);
+    lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
 
-  // Full width and height
-  lv_obj_set_size(grid, lv_pct(100), lv_pct(100));
+    // Full width and height
+    lv_obj_set_size(grid, lv_pct(100), lv_pct(100));
 
-  // Align inside tile
-  lv_obj_align(grid, LV_ALIGN_TOP_MID, 0, 120); 
+    // Align inside tile
+    lv_obj_align(grid, LV_ALIGN_TOP_MID, 0, 120); 
 
-  // Disable scrolling
-  lv_obj_clear_flag(grid, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_scrollbar_mode(grid, LV_SCROLLBAR_MODE_OFF);
+    // Disable scrolling
+    lv_obj_clear_flag(grid, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollbar_mode(grid, LV_SCROLLBAR_MODE_OFF);
 
-  // grid background
-  lv_obj_set_style_bg_color(grid, lv_color_hex(0xB1DFF2), 0);
-  lv_obj_set_style_bg_opa(grid, LV_OPA_COVER, 0);
-  lv_obj_set_style_pad_all(grid, 0, 0);
-  lv_obj_set_style_border_width(grid, 0, 0);
+    // grid background
+    lv_obj_set_style_bg_color(grid, lv_color_hex(0xB1DFF2), 0);
+    lv_obj_set_style_bg_opa(grid, LV_OPA_COVER, 0);
+    lv_obj_set_style_pad_all(grid, 0, 0);
+    lv_obj_set_style_border_width(grid, 0, 0);
 
-  // Example data, to be replaced 
-  const char* days[7]  = {"Today", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-  const char* parameters[7] = {"20°", "14°", "16°", "18°", "17°", "15°", "19°"};
-  const char* icons[7] = {"S", "C", "S", "R", "C", "S", "R"}; 
+    // Example data, to be replaced 
+    const char* days[7]  = {"Today", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    const char* parameters[7] = {"20°", "14°", "16°", "18°", "17°", "15°", "19°"};
+    const char* icons[7] = {"S", "C", "S", "R", "C", "S", "R"}; 
  
 
-  // loop that creates 7 rows of cells, with three columns
-  for(int r = 0; r < 7; r++) {
+    // loop that creates 7 rows of cells, with three columns
+    for(int r = 0; r < 7; r++) 
+    {
       // Choose font size: bigger for first (today) row
       const lv_font_t* font = (r == 0) ? &lv_font_montserrat_36 : &lv_font_montserrat_26;
 
@@ -160,11 +187,17 @@ static void create_ui()
       lv_obj_set_style_bg_opa(icon_obj, LV_OPA_COVER, 0);
       lv_obj_set_style_border_width(icon_obj, 0, 0);
       //text
-      lv_obj_t* icon_label = lv_label_create(icon_obj);
-      lv_label_set_text(icon_label, icons[r]);
-      lv_obj_set_style_text_font(icon_label, font, 0); 
-      lv_obj_center(icon_label);
-  }
+      //lv_obj_t* icon_label = lv_label_create(icon_obj);
+      //lv_label_set_text(icon_label, icons[r]);
+      //lv_obj_set_style_text_font(icon_label, font, 0); 
+      //lv_obj_center(icon_label);
+      
+      // --- NEW IMAGE CODE (ADD THIS) ---
+      lv_obj_t* icon_img = lv_img_create(icon_obj);
+      // Get the correct image struct based on the data point's iconID
+      lv_img_set_src(icon_img, get_icon_by_id(data[r].iconID));
+      lv_obj_center(icon_img);
+    }
   }
 
   // Tile #2
@@ -230,8 +263,6 @@ void setup()
 // Must have function: Loop runs continously on device after setup
 void loop()
 {
-  //Hello world test
- // Test commit
   lv_timer_handler();
   delay(5);
 }
