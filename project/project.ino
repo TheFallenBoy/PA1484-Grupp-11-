@@ -186,15 +186,7 @@ static void create_ui()
       lv_obj_set_style_bg_color(icon_obj, lv_color_hex(0xC0E5F4), 0);
       lv_obj_set_style_bg_opa(icon_obj, LV_OPA_COVER, 0);
       lv_obj_set_style_border_width(icon_obj, 0, 0);
-      //text
-      //lv_obj_t* icon_label = lv_label_create(icon_obj);
-      //lv_label_set_text(icon_label, icons[r]);
-      //lv_obj_set_style_text_font(icon_label, font, 0); 
-      //lv_obj_center(icon_label);
-      
-      // --- NEW IMAGE CODE (ADD THIS) ---
       lv_obj_t* icon_img = lv_img_create(icon_obj);
-      // Get the correct image struct based on the data point's iconID
       lv_img_set_src(icon_img, get_icon_by_id(data[r].iconID));
       lv_obj_center(icon_img);
     }
