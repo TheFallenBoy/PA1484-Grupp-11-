@@ -13,10 +13,11 @@ String WeatherService::BuildURL(float longitude, float latitude)
     url += String(longitude, 6);
     url += "/lat/";
     url += String(latitude, 6);
-    url += "/data.json?timeseries?parameters=air_temperature";
+    url += "/data.json?timeseries?parameters=air_temperature,symbol_code"; 
 
     return url;
 }
+
 
 String WeatherService::APIRequest(String URL)
 {
@@ -36,7 +37,7 @@ String WeatherService::APIRequest(String URL)
     http.end();
     return payload;
 }
-//AI generated with gemini Pro 3
+//AI generated with gemini Pro 3 Metod
 int WeatherService::getWeekday(int year, int month, int day) {
     static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
     
@@ -79,6 +80,7 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitu
     JsonDocument filter;
     filter["timeSeries"][0]["time"] = true;
     filter["timeSeries"][0]["data"]["air_temperature"] = true;
+    filter["timeSeries"][0]["data"]["symbol_code"] = true;
 
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter));
@@ -102,7 +104,6 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitu
         String t = String(timeStr);
 
         // 2. Kolla om tiden innehåller "T12:00:00"
-        // SMHI returnerar alltid ISO 8601 format.
         if (forecastData.size() == 0)
         { 
             //week day property will always be Today
@@ -111,11 +112,13 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitu
             
             point.temp = item["data"]["air_temperature"];
             point.weekday = "Today";
+            point.iconID = item["data"]["symbol_code"];
             forecastData.push_back(point);
 
             Serial.println(point.time);
             Serial.println(point.temp);
             Serial.println(point.weekday);
+            Serial.println(point.iconID);
 
         }
         else if (t.indexOf("T12:00:00") > 0) {
@@ -124,11 +127,14 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitu
             point.time = t; 
             
             point.temp = item["data"]["air_temperature"];
+            point.iconID = item["data"]["symbol_code"];
             SetWhatDay(point);
             forecastData.push_back(point);
             Serial.println(point.time);
             Serial.println(point.temp);
             Serial.println(point.weekday);
+            Serial.println(point.iconID);
+
         }
     }
 

@@ -8,11 +8,11 @@
 #include <LV_Helper.h>
 #include <lvgl.h>
 #include "WeatherService.h"
-#include "secrets.h"
+//#include "secrets.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "";
-static const char* WIFI_PASSWORD = "";
+static const char* WIFI_SSID     = "BTH_Guest";
+static const char* WIFI_PASSWORD = "oliv95lila";
 
 LilyGo_Class amoled;
 
@@ -27,9 +27,6 @@ static lv_obj_t* t2_label;
 static lv_obj_t* t3_label;
 static bool t2_dark = false;  // start tile #2 in light mode
 
-//API
-HTTPClient http;
-static const String API_URL = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/15.590337/lat/56.182822/data.json?timeseries?parameters=air_temperature";
 
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)

@@ -9,6 +9,7 @@ struct ForecastDataPoint {
     float temp;
     String time;
     const char* weekday;
+    int iconID;
 };
 
 class WeatherService {
