@@ -232,7 +232,11 @@ static void create_ui()
 
     lv_label_set_text(city_label, "City");
     lv_obj_set_style_text_font(city_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Gothenburg\n" "Stockholm"); // Placeholder options
+    lv_dropdown_clear_options(city_dd);
+    for (int i = 0; i < 3; ++i){
+      lv_dropdown_add_option(city_dd, "Elias är gammal gubbe", i); // Placeholder options
+    }
+    
 
     lv_obj_set_width(city_dd, LV_PCT(40));   // Dropdown width set
 
