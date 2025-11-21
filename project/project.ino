@@ -207,10 +207,42 @@ static void create_ui()
   // Tile #3
   {
     t3_label = lv_label_create(t3);
-    lv_label_set_text(t3_label, "third tile?");
+    lv_label_set_text(t3_label, "Settings");
     lv_obj_set_style_text_font(t3_label, &lv_font_montserrat_28, 0);
     lv_obj_center(t3_label);
     apply_tile_colors(t3, t3_label, /*dark=*/false);
+
+    // Create container for city row
+    lv_obj_t * cont_city = lv_obj_create(t3);
+    lv_obj_set_size(cont_city, LV_PCT(100), LV_PCT(30));
+    lv_obj_align(cont_city, LV_ALIGN_TOP_MID, 0, LV_PCT(5));
+    lv_obj_set_flex_flow(cont_city, LV_FLEX_FLOW_ROW);
+
+    // Create container for parameter row
+    lv_obj_t * cont_parameter = lv_obj_create(t3);
+    lv_obj_set_size(cont_parameter, LV_PCT(100), LV_PCT(30));
+    lv_obj_align(cont_parameter, LV_ALIGN_TOP_MID, 0, LV_PCT(5));
+    lv_obj_set_flex_flow(cont_parameter, LV_FLEX_FLOW_ROW);
+
+    // City selection row
+    lv_obj_t * city_label = lv_label_create(cont_city);
+    lv_obj_t * city_dd = lv_dropdown_create(cont_city);
+
+    lv_label_set_text(city_label, "City");
+    lv_obj_set_style_text_font(city_label, &lv_font_montserrat_28, 0);
+    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Göteborg\n" "Stockholm");
+
+    lv_obj_set_width(city_dd, LV_PCT(40));   // Dropdown width set
+
+    // Parameter selection row
+    lv_obj_t * parameter_label = lv_label_create(cont_parameter);
+    lv_obj_t * parameter_dd = lv_dropdown_create(cont_parameter);
+
+    lv_label_set_text(parameter_label, "Parameter");
+    lv_obj_set_style_text_font(parameter_label, &lv_font_montserrat_28, 0);
+    lv_dropdown_set_options(parameter_dd, "Option1\n" "Option2\n" "Option3\n");
+
+    lv_obj_set_width(parameter_dd, LV_PCT(40));   // Dropdown width set
   }
 }
 
