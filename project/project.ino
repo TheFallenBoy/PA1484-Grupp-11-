@@ -211,6 +211,8 @@ static void create_ui()
     lv_obj_set_style_text_font(t3_label, &lv_font_montserrat_28, 0);
     lv_obj_center(t3_label);
     apply_tile_colors(t3, t3_label, /*dark=*/false);
+    lv_obj_set_flex_flow(t3, LV_FLEX_FLOW_COLUMN);
+
 
     // Create container for city row
     lv_obj_t * cont_city = lv_obj_create(t3);
@@ -230,7 +232,7 @@ static void create_ui()
 
     lv_label_set_text(city_label, "City");
     lv_obj_set_style_text_font(city_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Göteborg\n" "Stockholm");
+    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Gothenburg\n" "Stockholm"); // Placeholder options
 
     lv_obj_set_width(city_dd, LV_PCT(40));   // Dropdown width set
 
@@ -240,7 +242,7 @@ static void create_ui()
 
     lv_label_set_text(parameter_label, "Parameter");
     lv_obj_set_style_text_font(parameter_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(parameter_dd, "Option1\n" "Option2\n" "Option3\n");
+    lv_dropdown_set_options(parameter_dd, "Option1\n" "Option2\n" "Option3\n"); // Placegholder options
 
     lv_obj_set_width(parameter_dd, LV_PCT(40));   // Dropdown width set
   }
