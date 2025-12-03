@@ -4,6 +4,8 @@
 
 WeatherService::WeatherService()
 {
+    longitude = 15.590337;
+    latitude = 56.182822;
 }
 
 String WeatherService::BuildURL(float longitude, float latitude)
@@ -67,7 +69,7 @@ void WeatherService::SetWhatDay(struct ForecastDataPoint &dataPoint)
 
 }
 
-std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitude, float latitude)
+std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
 {
     std::vector<ForecastDataPoint> forecastData;
 
@@ -139,8 +141,65 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast(float longitu
     }
 
     Serial.printf("[Info] Hittade %d dagar kl 12:00.\n", forecastData.size());
-
-
-
+    
     return forecastData; 
 }
+
+void WeatherService::SetStationID(int ID)
+{
+
+}
+
+int WeatherService::GetStationID()
+{
+    return 0;
+} 
+
+void WeatherService::SetParameterID(int ID)
+{
+    switch (ID)
+    {
+        case 0:
+            currentParameterID = 1;
+            break;
+        case 1:
+            currentParameterID = 6;
+            break;
+        case 2:
+            currentParameterID = 4;
+            break;
+        case 3:
+            currentParameterID = 9;
+            break;
+        default:
+            break;
+    }
+
+   
+}
+
+int WeatherService::GetParameterID()
+{
+    return currentParameterID;
+}
+
+String WeatherService::BuildHistoricalURL(int stationID)
+{
+    String url =  "https://opendata-download-metobs.smhi.se/api/version/latest/parameter/";
+    url += String(currentParameterID);
+    url += "/station/";
+    url += String(stationID);
+    url += "/period/latest-months/data.json";
+
+    return url;
+}
+
+ std::vector<float> WeatherService::GetHistoricalData(int stationID )
+ {
+    std::vector<float> historicalDataPoints;
+    String url = BuildHistoricalURL(stationID);
+
+    Serial.println(url);
+
+    return historicalDataPoints;
+ }

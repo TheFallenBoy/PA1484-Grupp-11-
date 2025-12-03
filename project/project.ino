@@ -12,7 +12,7 @@
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
 static const char* WIFI_SSID     = "BTH_Guest";
-static const char* WIFI_PASSWORD = "oliv95lila";
+static const char* WIFI_PASSWORD = "paprika45svart";
 
 LilyGo_Class amoled;
 
@@ -26,8 +26,12 @@ static lv_obj_t* t1_label;
 static lv_obj_t* t2_label;
 static lv_obj_t* t3_label;
 static bool t2_dark = false;  // start tile #2 in light mode
+static lv_obj_t* dayLabel[7];
+static lv_obj_t* iconImage[7];
+static lv_obj_t* paramLabel[7];
 
 
+static WeatherService ws;
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)
 {
@@ -52,6 +56,31 @@ LV_IMG_DECLARE(img_sun);
 LV_IMG_DECLARE(img_cloud);
 LV_IMG_DECLARE(img_rain);
 LV_IMG_DECLARE(img_snow);
+
+static void parameter_drop_down_event_handler(lv_event_t *e)
+{
+  lv_obj_t * dropdownParameter = lv_event_get_target(e);
+  
+  int selected_index_parameter = lv_dropdown_get_selected(dropdownParameter);
+  Serial.print("index valt:");
+  Serial.println(selected_index_parameter);
+ 
+
+  ws.SetParameterID(selected_index_parameter);
+
+  std::vector<float> ve = ws.GetHistoricalData(65090); //test
+  
+
+}
+static void city_drop_down_event_handler(lv_event_t *e)
+{
+
+  lv_obj_t * dropdownCity = lv_event_get_target(e);
+  int selected_index_city = lv_dropdown_get_selected(dropdownCity);
+  Serial.print("city valt:");
+  Serial.println(selected_index_city);
+
+}
 
 // 2. MAPPING FUNCTION
 // Maps SMHI symbol code (1-27) to your 4 icons
@@ -101,8 +130,7 @@ static void create_ui()
   // Tile #1 WEATHER FORECAST TILE
   {
 
-   WeatherService ws;
-   std::vector<ForecastDataPoint> data = ws.GetSevenDayForecast(15.590337,56.182822);
+   std::vector<ForecastDataPoint> data = ws.GetSevenDayForecast();
     // City title
     t1_label = lv_label_create(t1);
     lv_label_set_text(t1_label, "Karlskrona");
@@ -138,11 +166,6 @@ static void create_ui()
     lv_obj_set_style_pad_all(grid, 0, 0);
     lv_obj_set_style_border_width(grid, 0, 0);
 
-    // Example data, to be replaced 
-    const char* days[7]  = {"Today", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-    const char* parameters[7] = {"20°", "14°", "16°", "18°", "17°", "15°", "19°"};
-    const char* icons[7] = {"S", "C", "S", "R", "C", "S", "R"}; 
- 
 
     // loop that creates 7 rows of cells, with three columns
     for(int r = 0; r < 7; r++) 
@@ -159,10 +182,10 @@ static void create_ui()
       lv_obj_set_style_bg_opa(day_obj, LV_OPA_COVER, 0);
       lv_obj_set_style_border_width(day_obj, 0, 0);
       //text
-      lv_obj_t* day_label = lv_label_create(day_obj);
-      lv_label_set_text_fmt(day_label,"%s" , data[r].weekday);
-      lv_obj_set_style_text_font(day_label, font, 0);
-      lv_obj_center(day_label);
+      dayLabel[r]= lv_label_create(day_obj);
+      lv_label_set_text_fmt(dayLabel[r],"%s" , data[r].weekday);
+      lv_obj_set_style_text_font(dayLabel[r], font, 0);
+      lv_obj_center(dayLabel[r]);
 
       // Parameter cell
       lv_obj_t* param_obj = lv_obj_create(grid);
@@ -173,10 +196,10 @@ static void create_ui()
       lv_obj_set_style_bg_opa(param_obj, LV_OPA_COVER, 0);
       lv_obj_set_style_border_width(param_obj, 0, 0);
       //text
-      lv_obj_t* param_label = lv_label_create(param_obj);
-      lv_label_set_text_fmt(param_label,"%.1f °C", data[r].temp);
-      lv_obj_set_style_text_font(param_label, font, 0);
-      lv_obj_center(param_label);
+      paramLabel[r] = lv_label_create(param_obj);
+      lv_label_set_text_fmt(paramLabel[r],"%.1f °C", data[r].temp);
+      lv_obj_set_style_text_font(paramLabel[r], font, 0);
+      lv_obj_center(paramLabel[r]);
 
       // Icon cell 
       lv_obj_t* icon_obj = lv_obj_create(grid);
@@ -186,9 +209,10 @@ static void create_ui()
       lv_obj_set_style_bg_color(icon_obj, lv_color_hex(0xC0E5F4), 0);
       lv_obj_set_style_bg_opa(icon_obj, LV_OPA_COVER, 0);
       lv_obj_set_style_border_width(icon_obj, 0, 0);
-      lv_obj_t* icon_img = lv_img_create(icon_obj);
-      lv_img_set_src(icon_img, get_icon_by_id(data[r].iconID));
-      lv_obj_center(icon_img);
+      
+      iconImage[r] = lv_img_create(icon_obj);
+      lv_img_set_src(iconImage[r], get_icon_by_id(data[r].iconID));
+      lv_obj_center(iconImage[r]);
     }
   }
 
@@ -232,13 +256,10 @@ static void create_ui()
 
     lv_label_set_text(city_label, "City");
     lv_obj_set_style_text_font(city_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_clear_options(city_dd);
-    for (int i = 0; i < 3; ++i){
-      lv_dropdown_add_option(city_dd, "Elias är gammal gubbe", i); // Placeholder options
-    }
-    
+    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Stockholm\n" "Göteborg\n" "Malmö\n" "Kiruna\n");
 
     lv_obj_set_width(city_dd, LV_PCT(40));   // Dropdown width set
+    lv_obj_add_event_cb(city_dd, city_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
     // Parameter selection row
     lv_obj_t * parameter_label = lv_label_create(cont_parameter);
@@ -246,9 +267,10 @@ static void create_ui()
 
     lv_label_set_text(parameter_label, "Parameter");
     lv_obj_set_style_text_font(parameter_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(parameter_dd, "Option1\n" "Option2\n" "Option3\n"); // Placegholder options
+    lv_dropdown_set_options(parameter_dd, "Temperature\n" "Humidity\n" "Wind Speed\n" "Air Pressure\n"); // Placegholder options
 
     lv_obj_set_width(parameter_dd, LV_PCT(40));   // Dropdown width set
+    lv_obj_add_event_cb(parameter_dd, parameter_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
   }
 }
 
