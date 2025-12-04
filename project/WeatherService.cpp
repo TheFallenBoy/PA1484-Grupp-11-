@@ -4,19 +4,23 @@
 
 WeatherService::WeatherService()
 {
-    longitude = 15.590337;
-    latitude = 56.182822;
+    currentLongitude = 15.590337;
+    currentLatitude = 15.590337;
+    currentStationID = 65090;
+    currentParameterID = 1;
 }
 
-String WeatherService::BuildURL(float longitude, float latitude)
+String WeatherService::BuildURL()
 {
     // specifika URL (snow1g)
     String url = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/";
-    url += String(longitude, 6);
+    url += String(currentLongitude, 6);
     url += "/lat/";
-    url += String(latitude, 6);
-    url += "/data.json?timeseries?parameters=air_temperature,symbol_code"; 
-
+    url += String(currentLatitude, 6);
+    url += "/data.json?timeseries?parameters=";
+    url += currentParameter;
+    url += ",symbol_code"; 
+    Serial.printf("Forecast url: %s",url);
     return url;
 }
 
@@ -25,15 +29,19 @@ String WeatherService::APIRequest(String URL)
 {
     HTTPClient http;
     http.begin(URL);
-    
     Serial.println("[API] Request URL: " + URL);
+    
     int httpCode = http.GET();
-    String payload = ""; 
+
+    String payload = "";
 
     if (httpCode == HTTP_CODE_OK) {
         payload = http.getString();
     } else {
         Serial.printf("[API] Error code: %d\n", httpCode);
+        if (httpCode > 0) {
+            Serial.println(http.getString());
+        }
     }
 
     http.end();
@@ -73,7 +81,7 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
 {
     std::vector<ForecastDataPoint> forecastData;
 
-    String url = BuildURL(longitude, latitude);
+    String url = BuildURL();
     String payload = APIRequest(url);
 
     if (payload.isEmpty()) return forecastData;
@@ -81,7 +89,7 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
     // Filter to save memory. The API call might have been to big for the ESP-32 chip...
     JsonDocument filter;
     filter["timeSeries"][0]["time"] = true;
-    filter["timeSeries"][0]["data"]["air_temperature"] = true;
+    filter["timeSeries"][0]["data"][currentParameter] = true;
     filter["timeSeries"][0]["data"]["symbol_code"] = true;
 
     JsonDocument doc;
@@ -94,10 +102,8 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
 
     JsonArray series = doc["timeSeries"];
     
-    // --- HÄR ÄR ÄNDRINGEN FÖR FILTRERING ---
-    
     for (JsonObject item : series) {
-        // 1. Om vi redan har 7 dagar, sluta leta för att spara tid/minne
+       // 1. Om vi redan har 7 dagar, sluta leta för att spara tid/minne
         if (forecastData.size() >= 7) {
             break;
         }
@@ -112,15 +118,10 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
             ForecastDataPoint point;
             point.time = t; 
             
-            point.temp = item["data"]["air_temperature"];
+            point.temp = item["data"][currentParameter];
             point.weekday = "Today";
             point.iconID = item["data"]["symbol_code"];
             forecastData.push_back(point);
-
-            Serial.println(point.time);
-            Serial.println(point.temp);
-            Serial.println(point.weekday);
-            Serial.println(point.iconID);
 
         }
         else if (t.indexOf("T12:00:00") > 0) {
@@ -128,15 +129,10 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
             ForecastDataPoint point;
             point.time = t; 
             
-            point.temp = item["data"]["air_temperature"];
+            point.temp = item["data"][currentParameter];
             point.iconID = item["data"]["symbol_code"];
             SetWhatDay(point);
             forecastData.push_back(point);
-            Serial.println(point.time);
-            Serial.println(point.temp);
-            Serial.println(point.weekday);
-            Serial.println(point.iconID);
-
         }
     }
 
@@ -145,14 +141,50 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
     return forecastData; 
 }
 
+
+
 void WeatherService::SetStationID(int ID)
 {
-
+    switch (ID)
+    {
+        case 0:
+            currentStationID = 65090;
+            currentLatitude = 56.182822;
+            currentLongitude = 15.590337;
+            city = "Karlskrona";
+            break;
+        case 1:
+            currentStationID = 97400;
+            currentLatitude = 59.3293;
+            currentLongitude = 18.0686;
+            city = "Stockholm";
+            break;
+        case 2:
+            currentStationID = 72420;
+            currentLatitude = 57.7089;
+            currentLongitude = 11.9746;
+            city = "Gothenburg";
+            break;
+        case 3:
+            currentStationID = 53300;
+            currentLatitude = 55.6050;
+            currentLongitude = 13.0038;
+            city = "Malmo";
+            break;
+        case 4:
+            currentStationID = 180940;
+            currentLatitude = 67.8557;
+            currentLongitude = 20.2255;
+            city = "Kiruna";            
+            break;
+        default:
+            break;
+}
 }
 
 int WeatherService::GetStationID()
 {
-    return 0;
+    return currentStationID;
 } 
 
 void WeatherService::SetParameterID(int ID)
@@ -161,15 +193,23 @@ void WeatherService::SetParameterID(int ID)
     {
         case 0:
             currentParameterID = 1;
+            currentParameter = "air_temperature" ;
+            unit = "°C";
             break;
         case 1:
             currentParameterID = 6;
+            currentParameter = "relative_humidity";
+            unit = "%";
             break;
         case 2:
             currentParameterID = 4;
+            currentParameter = "wind_speed";
+            unit = "m/s";
             break;
         case 3:
             currentParameterID = 9;
+            currentParameter = "air_pressure_at_mean_sea_level";
+            unit = "hPa";
             break;
         default:
             break;
@@ -183,23 +223,57 @@ int WeatherService::GetParameterID()
     return currentParameterID;
 }
 
-String WeatherService::BuildHistoricalURL(int stationID)
+String WeatherService::BuildHistoricalURL()
 {
     String url =  "https://opendata-download-metobs.smhi.se/api/version/latest/parameter/";
     url += String(currentParameterID);
     url += "/station/";
-    url += String(stationID);
+    url += String(currentStationID);
     url += "/period/latest-months/data.json";
 
     return url;
 }
 
- std::vector<float> WeatherService::GetHistoricalData(int stationID )
+ std::vector<float> WeatherService::GetHistoricalData()
  {
     std::vector<float> historicalDataPoints;
-    String url = BuildHistoricalURL(stationID);
+    String url = BuildHistoricalURL();
 
-    Serial.println(url);
+    while (historicalDataPoints.size()==0)
+    {
+       
+        String payload = APIRequest(url);
 
-    return historicalDataPoints;
+        if(payload.isEmpty()) 
+        {
+        Serial.print("Empty payload in GetHistoricalData()");
+        return historicalDataPoints;
+        }
+        JsonDocument filter;
+        filter["value"][0]["value"] = true;
+
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, payload, DeserializationOption::Filter(filter));
+
+        if (error) {
+            Serial.println(error.f_str());
+        
+        // NYTT: Skriv ut de första 100 tecknen av payloaden för att se vad felet är
+            Serial.println("[JSON Payload Start] " + payload.substring(0, 100));
+            return historicalDataPoints;
+        }
+        JsonArray series = doc["value"];
+        for(JsonObject value : series)
+        {
+            float dataPoint = float(value["value"]);
+            historicalDataPoints.push_back(dataPoint);
+        }
+        
+        Serial.println(historicalDataPoints.size());
+    /* code */
+    }
+    
+       return historicalDataPoints;
+
+
  }

@@ -8,6 +8,7 @@
 #include <LV_Helper.h>
 #include <lvgl.h>
 #include "WeatherService.h"
+#include <preferences.h>
 //#include "secrets.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
@@ -29,9 +30,26 @@ static bool t2_dark = false;  // start tile #2 in light mode
 static lv_obj_t* dayLabel[7];
 static lv_obj_t* iconImage[7];
 static lv_obj_t* paramLabel[7];
+static lv_obj_t* slider;
+static lv_obj_t* slider_label; // kanske ska lägga till en slider?
+static lv_chart_cursor_t* cursor;
+Preferences saved_settings;
+lv_obj_t * city_dd; 
+lv_obj_t * parameter_dd;
+int savedCityIndex;
+int savedParamIndex;
 
 
+static bool needUpdateHistory = false;
+static lv_obj_t* chart;
+static lv_chart_series_t* ser1;
+std::vector<float> historyDataPoint;
 static WeatherService ws;
+
+
+
+
+
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)
 {
@@ -67,8 +85,8 @@ static void parameter_drop_down_event_handler(lv_event_t *e)
  
 
   ws.SetParameterID(selected_index_parameter);
-
-  std::vector<float> ve = ws.GetHistoricalData(65090); //test
+  needUpdateHistory = true;
+  Serial.println("Val ändrat, väntar på att du ska sluta klicka...");
   
 
 }
@@ -79,7 +97,10 @@ static void city_drop_down_event_handler(lv_event_t *e)
   int selected_index_city = lv_dropdown_get_selected(dropdownCity);
   Serial.print("city valt:");
   Serial.println(selected_index_city);
-
+  ws.SetStationID(selected_index_city);
+  needUpdateHistory = true;
+ 
+  Serial.println("Val ändrat, väntar på att du ska sluta klicka...");
 }
 
 // 2. MAPPING FUNCTION
@@ -101,6 +122,31 @@ const lv_img_dsc_t* get_icon_by_id(int id) {
 }
 
 
+
+static void slider_event_cb(lv_event_t* e)
+{
+  //needUpdateHistory = true;
+    lv_obj_t* slider_obj = lv_event_get_target(e);
+    
+    // Säkerhetskoll: Om vi inte har någon data, gör inget
+    if (historyDataPoint.empty()) return;
+
+    // 1. Hämta index från slidern (0 = äldsta, Max = nyaste)
+    int index = (int)lv_slider_get_value(slider_obj);
+
+    // Säkerställ att vi inte går utanför vektorn (kraschrisk annars!)
+    if (index < 0) index = 0;
+    if (index >= historyDataPoint.size()) index = historyDataPoint.size() - 1;
+
+    // 2. Hämta värdet för den punkten
+    float value = historyDataPoint[index];
+
+    lv_label_set_text_fmt(slider_label, "Value: %.1f %s", value, ws.unit);
+    // 4. Flytta markören i grafen till rätt punkt
+    // Parametrar: Grafen, Markören, Serien (ser1), Indexet
+    lv_chart_set_cursor_point(chart, cursor, ser1, index);
+
+}
 // Function: Creates UI
 static void create_ui()
 { 
@@ -117,7 +163,7 @@ static void create_ui()
   t2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR); //history tile
   t3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR); //settings tile
   
-  // STARTING SCREEN! Just nu visar den bara om API:n funkar.
+  // STARTING SCREEN! 
   {
     t0_label = lv_label_create(t0);
     lv_label_set_text(t0_label, "Grupp 11 V.3");
@@ -133,7 +179,7 @@ static void create_ui()
    std::vector<ForecastDataPoint> data = ws.GetSevenDayForecast();
     // City title
     t1_label = lv_label_create(t1);
-    lv_label_set_text(t1_label, "Karlskrona");
+    lv_label_set_text(t1_label, ws.city.c_str());
     lv_obj_set_style_text_font(t1_label, &lv_font_montserrat_40, 0);
     lv_obj_align(t1_label, LV_ALIGN_TOP_LEFT, 6, 10);
     apply_tile_colors(t1, t1_label, /*dark=*/false);
@@ -167,6 +213,7 @@ static void create_ui()
     lv_obj_set_style_border_width(grid, 0, 0);
 
 
+    const lv_font_t* font_data = &lv_font_montserrat_18;
     // loop that creates 7 rows of cells, with three columns
     for(int r = 0; r < 7; r++) 
     {
@@ -197,8 +244,8 @@ static void create_ui()
       lv_obj_set_style_border_width(param_obj, 0, 0);
       //text
       paramLabel[r] = lv_label_create(param_obj);
-      lv_label_set_text_fmt(paramLabel[r],"%.1f °C", data[r].temp);
-      lv_obj_set_style_text_font(paramLabel[r], font, 0);
+      lv_label_set_text_fmt(paramLabel[r],"%.1f %s", data[r].temp, ws.unit.c_str());
+      lv_obj_set_style_text_font(paramLabel[r], font_data, 0);
       lv_obj_center(paramLabel[r]);
 
       // Icon cell 
@@ -216,16 +263,51 @@ static void create_ui()
     }
   }
 
-  // Tile #2
+  
   {
-    t2_label = lv_label_create(t2);
-    lv_label_set_text(t2_label, "Historical weather data / graph");
-    lv_obj_set_style_text_font(t2_label, &lv_font_montserrat_28, 0);
-    lv_obj_center(t2_label);
+  // Tile #2 - HISTORICAL DATA
+    
+    // 1. Skapa grafen
+    chart = lv_chart_create(t2);
+    lv_obj_set_size(chart, 500, 300); // Justera storlek så den passar skärmen
+    lv_obj_center(chart);   // Centrera i tilen
 
-    apply_tile_colors(t2, t2_label, /*dark=*/false);
-    lv_obj_add_flag(t2, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_event_cb(t2, on_tile2_clicked, LV_EVENT_CLICKED, NULL);
+    slider_label = lv_label_create(t2);
+    
+    // Sätt en start-text
+    lv_label_set_text(slider_label, "Move the slider...");
+    
+    // Gör texten stor och tydlig (Vi återanvänder fonten du har i Tile 3)
+    lv_obj_set_style_text_font(slider_label, &lv_font_montserrat_28, 0);
+    
+    // Placera den OVANFÖR (OUT_TOP_MID) grafen med 10px marginal
+    lv_obj_align_to(slider_label, chart, LV_ALIGN_OUT_TOP_MID, 0, -20);
+    
+    // 2. Inställningar för grafen
+    lv_chart_set_type(chart, LV_CHART_TYPE_LINE); // Linjediagram
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -20, 30); // Start-skala (temp)
+    lv_chart_set_point_count(chart, 100); // Hur många punkter som visas (vi ändrar detta dynamiskt sen)
+    
+    // 3. Lägg till en dataserie (Röd linje)
+    ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+    
+    // Styla grafen lite (valfritt)
+    lv_obj_set_style_bg_color(chart, lv_color_white(), 0);
+    cursor = lv_chart_add_cursor(chart, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_ALL);
+
+
+      // --- NYTT: SKAPA SLIDER ---
+    slider = lv_slider_create(t2);
+    lv_obj_set_width(slider, 480);  
+    lv_obj_set_height(slider, 30);
+
+    lv_obj_set_style_pad_all(slider, 8, LV_PART_KNOB); 
+    lv_obj_set_style_bg_color(slider, lv_palette_main(LV_PALETTE_BLUE), LV_PART_KNOB);
+    lv_obj_align_to(slider, chart, LV_ALIGN_OUT_BOTTOM_MID, 0, 20); // Placera under grafen
+    
+    // Lägg till eventet vi skapade nyss
+    lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
   }
 
   // Tile #3
@@ -252,28 +334,116 @@ static void create_ui()
 
     // City selection row
     lv_obj_t * city_label = lv_label_create(cont_city);
-    lv_obj_t * city_dd = lv_dropdown_create(cont_city);
+    city_dd = lv_dropdown_create(cont_city);
 
     lv_label_set_text(city_label, "City");
     lv_obj_set_style_text_font(city_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Stockholm\n" "Göteborg\n" "Malmö\n" "Kiruna\n");
+    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Stockholm\n" "Gothenburg\n" "Malmo\n" "Kiruna");
 
     lv_obj_set_width(city_dd, LV_PCT(40));   // Dropdown width set
     lv_obj_add_event_cb(city_dd, city_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 
     // Parameter selection row
     lv_obj_t * parameter_label = lv_label_create(cont_parameter);
-    lv_obj_t * parameter_dd = lv_dropdown_create(cont_parameter);
+    parameter_dd = lv_dropdown_create(cont_parameter);
 
     lv_label_set_text(parameter_label, "Parameter");
     lv_obj_set_style_text_font(parameter_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(parameter_dd, "Temperature\n" "Humidity\n" "Wind Speed\n" "Air Pressure\n"); // Placegholder options
+    lv_dropdown_set_options(parameter_dd, "Temperature\n" "Humidity\n" "Wind Speed\n" "Air Pressure"); 
 
     lv_obj_set_width(parameter_dd, LV_PCT(40));   // Dropdown width set
     lv_obj_add_event_cb(parameter_dd, parameter_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+    //SAVE BUTTON
+    lv_obj_t* save_btn = lv_btn_create(t3);
+    lv_obj_set_size(save_btn, 200, 60); // Rejäl storlek
+    lv_obj_align(save_btn, LV_ALIGN_BOTTOM_MID, 0, -40); // Längst ner i mitten
+    
+    // Gör knappen grön så den syns bra
+    lv_obj_set_style_bg_color(save_btn, lv_color_hex(0x28a745), 0);
+
+    // Lägg till text på knappen
+    lv_obj_t* btn_label = lv_label_create(save_btn);
+    lv_label_set_text(btn_label, "Save Settings");
+    lv_obj_set_style_text_font(btn_label, &lv_font_montserrat_28, 0);
+    lv_obj_center(btn_label);
+
+    // Koppla ihop med spara-funktionen
+    lv_obj_add_event_cb(save_btn, save_button_event_handler, LV_EVENT_CLICKED, NULL);
+
+    lv_dropdown_set_selected(parameter_dd, savedParamIndex);
+    lv_dropdown_set_selected(city_dd, savedCityIndex);
   }
 }
 
+//mostly AI generated with gemini pro 3, modified by a human
+static void save_button_event_handler(lv_event_t* e)
+{
+  saved_settings.begin("weather-app", false);
+  int currentCityIndex = lv_dropdown_get_selected(city_dd);
+  int currentParameterIndex = lv_dropdown_get_selected(parameter_dd);
+
+  saved_settings.putInt("cityIdx",currentCityIndex);
+  saved_settings.putInt("paramIdx",currentParameterIndex);
+  saved_settings.end();  
+  lv_obj_t* btn = lv_event_get_target(e);
+  lv_obj_t* label = lv_obj_get_child(btn, 0);
+  lv_label_set_text(label, "Saved!");
+}
+
+void LoadSavedSettings() {
+  needUpdateHistory = true;  
+  saved_settings.begin("weather-app", true); // true = Read Only (läsläge)
+    
+    // Hämta sparade värden. "0" är standardvärdet om inget är sparat än.
+     savedCityIndex = saved_settings.getInt("cityIdx", 0);
+     savedParamIndex = saved_settings.getInt("paramIdx", 0);
+
+    
+    saved_settings.end();
+    
+    // Applicera på WeatherService direkt så vi hämtar rätt data
+    ws.SetStationID(savedCityIndex);
+    ws.SetParameterID(savedParamIndex);
+
+    
+    Serial.printf("Laddade inställningar -> Stad: %d, Param: %d\n", savedCityIndex, savedParamIndex);
+}
+
+static void UpdateUI()
+{
+    std::vector<ForecastDataPoint> forecastData = ws.GetSevenDayForecast(); 
+    for (int i = 0; i < 7; i++)
+    {
+      lv_label_set_text(dayLabel[i], forecastData[i].weekday);
+      lv_img_set_src(iconImage[i], get_icon_by_id(forecastData[i].iconID));
+      lv_label_set_text_fmt(paramLabel[i], "%.1f %s",forecastData[i].temp, ws.unit);
+    }
+    lv_label_set_text(t1_label, ws.city.c_str());
+    historyDataPoint = ws.GetHistoricalData();
+    //AI genererat gemini 3 pro
+    // 1. Räkna ut min/max värde i datan för att skala Y-axeln snyggt
+    float minVal = 1000;
+    float maxVal = -1000;
+    for (float val : historyDataPoint) {
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
+    }
+    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, (int)minVal - 5, (int)maxVal + 5);
+    lv_chart_set_point_count(chart, historyDataPoint.size());
+    for (float val : historyDataPoint) {
+        // LVGL tar int, så vi castar float till int (eller multiplicerar med 10 för precision om du vill trixa)
+        lv_chart_set_next_value(chart, ser1, (int)val);
+    }
+
+    lv_slider_set_range(slider, 0, historyDataPoint.size() - 1);
+    int newestIndex = historyDataPoint.size() - 1;
+    lv_slider_set_value(slider, newestIndex, LV_ANIM_ON);
+
+    // Uppdatera även markören och texten manuellt en gång så det matchar
+    lv_chart_set_cursor_point(chart, cursor, ser1, newestIndex);
+   
+}
 
 // Function: Connects to WIFI
 static void connect_wifi()
@@ -301,6 +471,8 @@ void setup()
   Serial.begin(115200);
   delay(200);
 
+ 
+
   if (!amoled.begin()) {
     Serial.println("Failed to init LilyGO AMOLED.");
     while (true) delay(1000);
@@ -308,6 +480,7 @@ void setup()
   }
   beginLvglHelper(amoled);   // init LVGL for this board
   connect_wifi();
+  LoadSavedSettings();
   create_ui();
   
 }
@@ -317,5 +490,12 @@ void loop()
 {
   lv_timer_handler();
   delay(5);
+
+  if (needUpdateHistory)
+  {
+    needUpdateHistory = false;
+    UpdateUI();
+    
+  }
 }
 

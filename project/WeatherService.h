@@ -19,19 +19,23 @@ public:
     
     // Hämtar 7-dygnsprognos (eller det din URL ger)
     std::vector<ForecastDataPoint> GetSevenDayForecast();
-    std::vector<float> GetHistoricalData(int stationID);
+    std::vector<float> GetHistoricalData();
     void SetStationID(int ID);
     int GetStationID();
     void SetParameterID(int ID);
     int GetParameterID();
+    String unit;
+    String city;
 
 private:
     int currentStationID;
     int currentParameterID;
-    float longitude;
-    float latitude;
+    float currentLongitude;
+    float currentLatitude;
+    String currentParameter;
+
     // Bygger din specifika URL
-    String BuildURL(float longitude, float latitude);
+    String BuildURL();
     // Anropar nätverket
     String APIRequest(String URL);
     void SetWhatDay(struct ForecastDataPoint &datapoint);
@@ -39,7 +43,7 @@ private:
 
     
     
-    String BuildHistoricalURL(int stationID);
+    String BuildHistoricalURL();
 
 };
 
