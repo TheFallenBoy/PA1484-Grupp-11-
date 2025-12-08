@@ -138,240 +138,225 @@ static void slider_event_cb(lv_event_t* e)
   lv_chart_set_cursor_point(chart, cursor, ser1, index);
 }
 
-// Function: Creates UI
+static void setup_boot_tile(lv_obj_t* parent);
+static void setup_forecast_tile(lv_obj_t* parent);
+static void setup_history_tile(lv_obj_t* parent);
+static void setup_settings_tile(lv_obj_t* parent);
+
+// MAIN UI CREATION
 static void create_ui()
 { 
-  // Fullscreen Tileview
+  // 1. Create Main Tileview
   tileview = lv_tileview_create(lv_scr_act());
   lv_obj_set_size(tileview, lv_disp_get_hor_res(NULL), lv_disp_get_ver_res(NULL));
   lv_obj_set_scrollbar_mode(tileview, LV_SCROLLBAR_MODE_OFF);
 
-  // Add tile positions in a grid
-  t0 = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_HOR); //Boot tile
-  t1 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR); //forecast tile
-  t2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR); //history tile
-  t3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR); //settings tile
+  // 2. Add tiles to the view
+  t0 = lv_tileview_add_tile(tileview, 0, 0, LV_DIR_HOR); // Boot
+  t1 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR); // Forecast
+  t2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR); // History
+  t3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR); // Settings
   
-  // STARTING SCREEN! 
-  {
-    t0_label = lv_label_create(t0);
-    lv_label_set_text(t0_label, "Grupp 11 V.3");
-    lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
-    lv_obj_center(t0_label);
-    apply_tile_colors(t0, t0_label, /*dark=*/false);
-  }
+  // 3. Setup individual tiles using helper functions
+  setup_boot_tile(t0);
+  setup_forecast_tile(t1);
+  setup_history_tile(t2);
+  setup_settings_tile(t3);
+}
 
-  // Tile #1 WEATHER FORECAST TILE
-  {
-    std::vector<ForecastDataPoint> data = ws.GetSevenDayForecast();
-    // City title
-    t1_label = lv_label_create(t1);
-    lv_label_set_text(t1_label, ws.city.c_str());
-    lv_obj_set_style_text_font(t1_label, &lv_font_montserrat_40, 0);
-    lv_obj_align(t1_label, LV_ALIGN_TOP_LEFT, 6, 10);
-    apply_tile_colors(t1, t1_label, /*dark=*/false);
+// --- Tile #0: Boot Screen ---
+static void setup_boot_tile(lv_obj_t* parent) 
+{
+  t0_label = lv_label_create(parent);
+  lv_label_set_text(t0_label, "Grupp 11 V.3");
+  lv_obj_set_style_text_font(t0_label, &lv_font_montserrat_28, 0);
+  lv_obj_center(t0_label);
     
-    // Parameter title
-    lv_obj_t* t1_sub = lv_label_create(t1);
-    lv_label_set_text(t1_sub, "Temperature");
-    lv_obj_set_style_text_font(t1_sub, &lv_font_montserrat_32, 0);
-    lv_obj_align_to(t1_sub, t1_label, LV_ALIGN_OUT_BOTTOM_LEFT,6, 6);
+  apply_tile_colors(parent, t0_label, /*dark=*/false);
+}
 
-    // GRID DEFINTIONS
-    static lv_coord_t col_dsc[] = {LV_GRID_FR(3), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    static lv_coord_t row_dsc[] = {LV_GRID_FR(2), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
-    lv_obj_t* grid = lv_obj_create(t1);
-    lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
+// --- Tile #1: Forecast ---
+static void setup_forecast_tile(lv_obj_t* parent) 
+{
+  // 1. Static Labels (City & Subtitle)
+  t1_label = lv_label_create(parent);
+  lv_label_set_text(t1_label, "Loading..."); // Placeholder until UpdateUI runs
+  lv_obj_set_style_text_font(t1_label, &lv_font_montserrat_40, 0);
+  lv_obj_align(t1_label, LV_ALIGN_TOP_LEFT, 6, 10);
+    
+  apply_tile_colors(parent, t1_label, /*dark=*/false);
+    
+  lv_obj_t* t1_sub = lv_label_create(parent);
+  lv_label_set_text(t1_sub, "Temperature");
+  lv_obj_set_style_text_font(t1_sub, &lv_font_montserrat_32, 0);
+  lv_obj_align_to(t1_sub, t1_label, LV_ALIGN_OUT_BOTTOM_LEFT, 6, 6);
 
-    // Full width and height
-    lv_obj_set_size(grid, lv_pct(100), lv_pct(100));
+  // 2. Grid Setup
+  static lv_coord_t col_dsc[] = {LV_GRID_FR(3), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  static lv_coord_t row_dsc[] = {LV_GRID_FR(2), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+    
+  lv_obj_t* grid = lv_obj_create(parent);
+  lv_obj_set_grid_dsc_array(grid, col_dsc, row_dsc);
+  lv_obj_set_size(grid, lv_pct(100), lv_pct(100));
+  lv_obj_align(grid, LV_ALIGN_TOP_MID, 0, 120); 
+  lv_obj_clear_flag(grid, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_scrollbar_mode(grid, LV_SCROLLBAR_MODE_OFF);
+  lv_obj_set_style_bg_color(grid, lv_color_hex(0xB1DFF2), 0);
+  lv_obj_set_style_bg_opa(grid, LV_OPA_COVER, 0);
+  lv_obj_set_style_pad_all(grid, 0, 0);
+  lv_obj_set_style_border_width(grid, 0, 0);
 
-    // Align inside tile
-    lv_obj_align(grid, LV_ALIGN_TOP_MID, 0, 120); 
+  // 3. Create Rows (With placeholder data)
+  const lv_font_t* font_data = &lv_font_montserrat_18;
+    
+  for(int r = 0; r < 7; r++) 
+  {
+    const lv_font_t* font = (r == 0) ? &lv_font_montserrat_36 : &lv_font_montserrat_26;
 
-    // Disable scrolling
-    lv_obj_clear_flag(grid, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_scrollbar_mode(grid, LV_SCROLLBAR_MODE_OFF);
-
-    // grid background
-    lv_obj_set_style_bg_color(grid, lv_color_hex(0xB1DFF2), 0);
-    lv_obj_set_style_bg_opa(grid, LV_OPA_COVER, 0);
-    lv_obj_set_style_pad_all(grid, 0, 0);
-    lv_obj_set_style_border_width(grid, 0, 0);
-
-
-    const lv_font_t* font_data = &lv_font_montserrat_18;
-    // loop that creates 7 rows of cells, with three columns
-    for(int r = 0; r < 7; r++) 
-    {
-      // Choose font size: bigger for first (today) row
-      const lv_font_t* font = (r == 0) ? &lv_font_montserrat_36 : &lv_font_montserrat_26;
-
-      // Day cell
-      lv_obj_t* day_obj = lv_obj_create(grid);
-      lv_obj_set_grid_cell(day_obj, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_STRETCH, r, 1);
-      lv_obj_clear_flag(day_obj, LV_OBJ_FLAG_SCROLLABLE);
-      // visual properties 
-      lv_obj_set_style_bg_color(day_obj, lv_color_hex(0xC0E5F4), 0);
-      lv_obj_set_style_bg_opa(day_obj, LV_OPA_COVER, 0);
-      lv_obj_set_style_border_width(day_obj, 0, 0);
-      //text
-      dayLabel[r]= lv_label_create(day_obj);
-      lv_label_set_text_fmt(dayLabel[r],"%s" , data[r].weekday);
-      lv_obj_set_style_text_font(dayLabel[r], font, 0);
-      lv_obj_center(dayLabel[r]);
-
-      // Parameter cell
-      lv_obj_t* param_obj = lv_obj_create(grid);
-      lv_obj_set_grid_cell(param_obj, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_STRETCH, r, 1);
-      lv_obj_clear_flag(param_obj, LV_OBJ_FLAG_SCROLLABLE);
-      // background 
-      lv_obj_set_style_bg_color(param_obj, lv_color_hex(0xC0E5F4), 0);
-      lv_obj_set_style_bg_opa(param_obj, LV_OPA_COVER, 0);
-      lv_obj_set_style_border_width(param_obj, 0, 0);
-      //text
-      paramLabel[r] = lv_label_create(param_obj);
-      lv_label_set_text_fmt(paramLabel[r],"%.1f %s", data[r].temp, ws.unit.c_str());
-      lv_obj_set_style_text_font(paramLabel[r], font_data, 0);
-      lv_obj_center(paramLabel[r]);
-
-      // Icon cell 
-      lv_obj_t* icon_obj = lv_obj_create(grid);
-      lv_obj_set_grid_cell(icon_obj, LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_STRETCH, r, 1);
-      lv_obj_clear_flag(icon_obj, LV_OBJ_FLAG_SCROLLABLE);
-      // background 
-      lv_obj_set_style_bg_color(icon_obj, lv_color_hex(0xC0E5F4), 0);
-      lv_obj_set_style_bg_opa(icon_obj, LV_OPA_COVER, 0);
-      lv_obj_set_style_border_width(icon_obj, 0, 0);
+    // Day cell
+    lv_obj_t* day_obj = lv_obj_create(grid);
+    lv_obj_set_grid_cell(day_obj, LV_GRID_ALIGN_STRETCH, 0, 1, LV_GRID_ALIGN_STRETCH, r, 1);
+    lv_obj_clear_flag(day_obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(day_obj, lv_color_hex(0xC0E5F4), 0);
+    lv_obj_set_style_bg_opa(day_obj, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(day_obj, 0, 0);
       
-      iconImage[r] = lv_img_create(icon_obj);
-      lv_img_set_src(iconImage[r], get_icon_by_id(data[r].iconID));
-      lv_obj_center(iconImage[r]);
-    }
+    dayLabel[r]= lv_label_create(day_obj);
+    lv_label_set_text(dayLabel[r], "-"); // Placeholder
+    lv_obj_set_style_text_font(dayLabel[r], font, 0);
+    lv_obj_center(dayLabel[r]);
+
+    // Parameter cell
+    lv_obj_t* param_obj = lv_obj_create(grid);
+    lv_obj_set_grid_cell(param_obj, LV_GRID_ALIGN_STRETCH, 1, 1, LV_GRID_ALIGN_STRETCH, r, 1);
+    lv_obj_clear_flag(param_obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(param_obj, lv_color_hex(0xC0E5F4), 0);
+    lv_obj_set_style_bg_opa(param_obj, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(param_obj, 0, 0);
+      
+    paramLabel[r] = lv_label_create(param_obj);
+    lv_label_set_text(paramLabel[r], "-"); // Placeholder
+    lv_obj_set_style_text_font(paramLabel[r], font_data, 0);
+    lv_obj_center(paramLabel[r]);
+
+    // Icon cell 
+    lv_obj_t* icon_obj = lv_obj_create(grid);
+    lv_obj_set_grid_cell(icon_obj, LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_STRETCH, r, 1);
+    lv_obj_clear_flag(icon_obj, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_color(icon_obj, lv_color_hex(0xC0E5F4), 0);
+    lv_obj_set_style_bg_opa(icon_obj, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(icon_obj, 0, 0);
+      
+    iconImage[r] = lv_img_create(icon_obj);
+    lv_img_set_src(iconImage[r], &img_cloud); // Default placeholder icon
+    lv_obj_center(iconImage[r]);
   }
+}
+
+// --- Tile #2: History/Graph ---
+static void setup_history_tile(lv_obj_t* parent) 
+{
+  // 1. Create Chart
+  chart = lv_chart_create(parent);
+  lv_obj_set_size(chart, 500, 300);
+  lv_obj_center(chart);
+    
+  // 2. Create Label
+  slider_label = lv_label_create(parent);
+  lv_label_set_text(slider_label, "Move the slider...");
+  lv_obj_set_style_text_font(slider_label, &lv_font_montserrat_28, 0);
+  lv_obj_align_to(slider_label, chart, LV_ALIGN_OUT_TOP_MID, 0, -20);
+
+  // 3. Chart Settings
+  lv_chart_set_type(chart, LV_CHART_TYPE_LINE);
+  lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -20, 30);
+  lv_chart_set_point_count(chart, 100); 
+    
+  ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
+  lv_obj_set_style_bg_color(chart, lv_color_white(), 0);
+  cursor = lv_chart_add_cursor(chart, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_ALL);
+
+  // 4. Create Slider
+  slider = lv_slider_create(parent);
+  lv_obj_set_width(slider, 480);  
+  lv_obj_set_height(slider, 30);
+  lv_obj_set_style_pad_all(slider, 8, LV_PART_KNOB);
+  lv_obj_set_style_bg_color(slider, lv_palette_main(LV_PALETTE_BLUE), LV_PART_KNOB);
+  lv_obj_align_to(slider, chart, LV_ALIGN_OUT_BOTTOM_MID, 0, 20); 
+    
+  lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    
+  // Add click event for dark mode toggle (from original code)
+  lv_obj_add_event_cb(parent, on_tile2_clicked, LV_EVENT_CLICKED, NULL);
+}
+
+// --- Tile #3: Settings ---
+static void setup_settings_tile(lv_obj_t* parent) 
+{
+  t3_label = lv_label_create(parent);
+  lv_label_set_text(t3_label, "Settings");
+  lv_obj_set_style_text_font(t3_label, &lv_font_montserrat_28, 0);
+  lv_obj_center(t3_label);
+    
+  apply_tile_colors(parent, t3_label, /*dark=*/false);
+  lv_obj_set_flex_flow(parent, LV_FLEX_FLOW_COLUMN);
+
+  // Containers
+  lv_obj_t * cont_city = lv_obj_create(parent);
+  lv_obj_set_size(cont_city, LV_PCT(100), LV_PCT(30));
+  lv_obj_align(cont_city, LV_ALIGN_TOP_MID, 0, LV_PCT(5));
+  lv_obj_set_flex_flow(cont_city, LV_FLEX_FLOW_ROW);
+
+  lv_obj_t * cont_parameter = lv_obj_create(parent);
+  lv_obj_set_size(cont_parameter, LV_PCT(100), LV_PCT(30));
+  lv_obj_align(cont_parameter, LV_ALIGN_TOP_MID, 0, LV_PCT(5));
+  lv_obj_set_flex_flow(cont_parameter, LV_FLEX_FLOW_ROW);
+
+  // City Dropdown
+  lv_obj_t * city_label = lv_label_create(cont_city);
+  city_dd = lv_dropdown_create(cont_city);
+  lv_label_set_text(city_label, "City");
+  lv_obj_set_style_text_font(city_label, &lv_font_montserrat_28, 0);
+  lv_dropdown_set_options(city_dd, "Karlskrona\n" "Stockholm\n" "Gothenburg\n" "Malmo\n" "Kiruna");
+  lv_obj_set_width(city_dd, LV_PCT(40));
+  lv_obj_add_event_cb(city_dd, city_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+  // Parameter Dropdown
+  lv_obj_t * parameter_label = lv_label_create(cont_parameter);
+  parameter_dd = lv_dropdown_create(cont_parameter);
+  lv_label_set_text(parameter_label, "Parameter");
+  lv_obj_set_style_text_font(parameter_label, &lv_font_montserrat_28, 0);
+  lv_dropdown_set_options(parameter_dd, "Temperature\n" "Humidity\n" "Wind Speed\n" "Air Pressure"); 
+  lv_obj_set_width(parameter_dd, LV_PCT(40));
+  lv_obj_add_event_cb(parameter_dd, parameter_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
+
+  // Save Button
+  lv_obj_t* save_btn = lv_btn_create(parent);
+  lv_obj_set_size(save_btn, 200, 60);
+  lv_obj_align(save_btn, LV_ALIGN_BOTTOM_MID, 0, -40);
+  lv_obj_set_style_bg_color(save_btn, lv_color_hex(0x28a745), 0);
+    
+  lv_obj_t* btn_save_label = lv_label_create(save_btn);
+  lv_label_set_text(btn_save_label, "Save Settings");
+  lv_obj_set_style_text_font(btn_save_label, &lv_font_montserrat_28, 0);
+  lv_obj_center(btn_save_label);
+  lv_obj_add_event_cb(save_btn, save_button_event_handler, LV_EVENT_CLICKED, NULL);
   
-  // Tile #2 - HISTORICAL DATA
-  {
-    // 1. Skapa grafen
-    chart = lv_chart_create(t2);
-    lv_obj_set_size(chart, 500, 300); // Justera storlek så den passar skärmen
-    lv_obj_center(chart);   // Centrera i tilen
-
-    slider_label = lv_label_create(t2);
+  // Reset Button
+  lv_obj_t* reset_set_btn = lv_btn_create(parent);
+  lv_obj_set_size(reset_set_btn, 200, 60);
+  lv_obj_align(reset_set_btn,LV_ALIGN_BOTTOM_RIGHT, 250 , -40);
+  lv_obj_set_style_bg_color(reset_set_btn, lv_color_hex(0xFF0FFE), 0);
     
-    // Sätt en start-text
-    lv_label_set_text(slider_label, "Move the slider...");
-    
-    // Gör texten stor och tydlig (Vi återanvänder fonten du har i Tile 3)
-    lv_obj_set_style_text_font(slider_label, &lv_font_montserrat_28, 0);
-    
-    // Placera den OVANFÖR (OUT_TOP_MID) grafen med 10px marginal
-    lv_obj_align_to(slider_label, chart, LV_ALIGN_OUT_TOP_MID, 0, -20);
-    
-    // 2. Inställningar för grafen
-    lv_chart_set_type(chart, LV_CHART_TYPE_LINE); // Linjediagram
-    lv_chart_set_range(chart, LV_CHART_AXIS_PRIMARY_Y, -20, 30); // Start-skala (temp)
-    lv_chart_set_point_count(chart, 100); // Hur många punkter som visas (vi ändrar detta dynamiskt sen)
-    
-    // 3. Lägg till en dataserie (Röd linje)
-    ser1 = lv_chart_add_series(chart, lv_palette_main(LV_PALETTE_RED), LV_CHART_AXIS_PRIMARY_Y);
-    
-    // Styla grafen lite (valfritt)
-    lv_obj_set_style_bg_color(chart, lv_color_white(), 0);
-    cursor = lv_chart_add_cursor(chart, lv_palette_main(LV_PALETTE_BLUE), LV_DIR_ALL);
+  lv_obj_t* btn_reset_label = lv_label_create(reset_set_btn);
+  lv_label_set_text(btn_reset_label, "Reset");
+  lv_obj_set_style_text_font(btn_reset_label, &lv_font_montserrat_28, 0);
+  lv_obj_center(btn_reset_label);
+  lv_obj_add_event_cb(reset_set_btn, reset_button_event_handler, LV_EVENT_CLICKED, NULL);
 
-
-      // --- NYTT: SKAPA SLIDER ---
-    slider = lv_slider_create(t2);
-    lv_obj_set_width(slider, 480);  
-    lv_obj_set_height(slider, 30);
-
-    lv_obj_set_style_pad_all(slider, 8, LV_PART_KNOB); 
-    lv_obj_set_style_bg_color(slider, lv_palette_main(LV_PALETTE_BLUE), LV_PART_KNOB);
-    lv_obj_align_to(slider, chart, LV_ALIGN_OUT_BOTTOM_MID, 0, 20); // Placera under grafen
-    
-    // Lägg till eventet vi skapade nyss
-    lv_obj_add_event_cb(slider, slider_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
-  }
-
-  // Tile #3 OPTIONS
-  {
-    t3_label = lv_label_create(t3);
-    lv_label_set_text(t3_label, "Settings");
-    lv_obj_set_style_text_font(t3_label, &lv_font_montserrat_28, 0);
-    lv_obj_center(t3_label);
-    apply_tile_colors(t3, t3_label, /*dark=*/false);
-    lv_obj_set_flex_flow(t3, LV_FLEX_FLOW_COLUMN);
-
-
-    // Create container for city row
-    lv_obj_t * cont_city = lv_obj_create(t3);
-    lv_obj_set_size(cont_city, LV_PCT(100), LV_PCT(30));
-    lv_obj_align(cont_city, LV_ALIGN_TOP_MID, 0, LV_PCT(5));
-    lv_obj_set_flex_flow(cont_city, LV_FLEX_FLOW_ROW);
-
-    // Create container for parameter row
-    lv_obj_t * cont_parameter = lv_obj_create(t3);
-    lv_obj_set_size(cont_parameter, LV_PCT(100), LV_PCT(30));
-    lv_obj_align(cont_parameter, LV_ALIGN_TOP_MID, 0, LV_PCT(5));
-    lv_obj_set_flex_flow(cont_parameter, LV_FLEX_FLOW_ROW);
-
-    // City selection row
-    lv_obj_t * city_label = lv_label_create(cont_city);
-    city_dd = lv_dropdown_create(cont_city);
-
-    lv_label_set_text(city_label, "City");
-    lv_obj_set_style_text_font(city_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(city_dd, "Karlskrona\n" "Stockholm\n" "Gothenburg\n" "Malmo\n" "Kiruna");
-
-    lv_obj_set_width(city_dd, LV_PCT(40));   // Dropdown width set
-    lv_obj_add_event_cb(city_dd, city_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
-
-    // Parameter selection row
-    lv_obj_t * parameter_label = lv_label_create(cont_parameter);
-    parameter_dd = lv_dropdown_create(cont_parameter);
-
-    lv_label_set_text(parameter_label, "Parameter");
-    lv_obj_set_style_text_font(parameter_label, &lv_font_montserrat_28, 0);
-    lv_dropdown_set_options(parameter_dd, "Temperature\n" "Humidity\n" "Wind Speed\n" "Air Pressure"); 
-
-    lv_obj_set_width(parameter_dd, LV_PCT(40));   // Dropdown width set
-    lv_obj_add_event_cb(parameter_dd, parameter_drop_down_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
-
-    //SAVE BUTTON
-    lv_obj_t* save_btn = lv_btn_create(t3);
-    lv_obj_set_size(save_btn, 200, 60); // Rejäl storlek
-    lv_obj_align(save_btn, LV_ALIGN_BOTTOM_MID, 0, -40); // Längst ner i mitten
-    
-    // Gör knappen grön så den syns bra
-    lv_obj_set_style_bg_color(save_btn, lv_color_hex(0x28a745), 0);
-
-    // Lägg till text på knappen
-    lv_obj_t* btn_save_label = lv_label_create(save_btn);
-    lv_label_set_text(btn_save_label, "Save Settings");
-    lv_obj_set_style_text_font(btn_save_label, &lv_font_montserrat_28, 0);
-    lv_obj_center(btn_save_label);
-
-    // Koppla ihop med spara-funktionen
-    lv_obj_add_event_cb(save_btn, save_button_event_handler, LV_EVENT_CLICKED, NULL);
-  
-    lv_obj_t* reset_set_btn = lv_btn_create(t3);
-    lv_obj_set_size(reset_set_btn, 200, 60); // Rejäl storlek
-    lv_obj_align(reset_set_btn,LV_ALIGN_BOTTOM_RIGHT, 250 , -40); // Längst ner i mitten
-    
-    // Gör knappen grön så den syns bra
-    lv_obj_set_style_bg_color(reset_set_btn, lv_color_hex(0xFF0FFE), 0);
-
-    // Lägg till text på knappen
-    lv_obj_t* btn_reset_label = lv_label_create(reset_set_btn);
-    lv_label_set_text(btn_reset_label, "Reset");
-    lv_obj_set_style_text_font(btn_reset_label, &lv_font_montserrat_28, 0);
-    lv_obj_center(btn_reset_label);
-
-    lv_obj_add_event_cb(reset_set_btn, reset_button_event_handler, LV_EVENT_CLICKED, NULL);
-    lv_dropdown_set_selected(parameter_dd, savedParamIndex);
-    lv_dropdown_set_selected(city_dd, savedCityIndex);
-  }
+  // Set Initial Values from Saved Settings
+  lv_dropdown_set_selected(parameter_dd, savedParamIndex);
+  lv_dropdown_set_selected(city_dd, savedCityIndex);
 }
 
 //mostly AI generated with gemini pro 3, modified by a human
