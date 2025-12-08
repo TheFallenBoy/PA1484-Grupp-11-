@@ -310,7 +310,7 @@ static void create_ui()
 
   }
 
-  // Tile #3
+  // Tile #3 OPTIONS
   {
     t3_label = lv_label_create(t3);
     lv_label_set_text(t3_label, "Settings");
@@ -363,14 +363,28 @@ static void create_ui()
     lv_obj_set_style_bg_color(save_btn, lv_color_hex(0x28a745), 0);
 
     // Lägg till text på knappen
-    lv_obj_t* btn_label = lv_label_create(save_btn);
-    lv_label_set_text(btn_label, "Save Settings");
-    lv_obj_set_style_text_font(btn_label, &lv_font_montserrat_28, 0);
-    lv_obj_center(btn_label);
+    lv_obj_t* btn_save_label = lv_label_create(save_btn);
+    lv_label_set_text(btn_save_label, "Save Settings");
+    lv_obj_set_style_text_font(btn_save_label, &lv_font_montserrat_28, 0);
+    lv_obj_center(btn_save_label);
 
     // Koppla ihop med spara-funktionen
     lv_obj_add_event_cb(save_btn, save_button_event_handler, LV_EVENT_CLICKED, NULL);
+  
+    lv_obj_t* reset_set_btn = lv_btn_create(t3);
+    lv_obj_set_size(reset_set_btn, 200, 60); // Rejäl storlek
+    lv_obj_align(reset_set_btn,LV_ALIGN_BOTTOM_RIGHT, 250 , -40); // Längst ner i mitten
+    
+    // Gör knappen grön så den syns bra
+    lv_obj_set_style_bg_color(reset_set_btn, lv_color_hex(0xFF0FFE), 0);
 
+    // Lägg till text på knappen
+    lv_obj_t* btn_reset_label = lv_label_create(reset_set_btn);
+    lv_label_set_text(btn_reset_label, "Reset");
+    lv_obj_set_style_text_font(btn_reset_label, &lv_font_montserrat_28, 0);
+    lv_obj_center(btn_reset_label);
+
+    lv_obj_add_event_cb(reset_set_btn, reset_button_event_handler, LV_EVENT_CLICKED, NULL);
     lv_dropdown_set_selected(parameter_dd, savedParamIndex);
     lv_dropdown_set_selected(city_dd, savedCityIndex);
   }
@@ -389,6 +403,13 @@ static void save_button_event_handler(lv_event_t* e)
   lv_obj_t* btn = lv_event_get_target(e);
   lv_obj_t* label = lv_obj_get_child(btn, 0);
   lv_label_set_text(label, "Saved!");
+}
+
+static void reset_button_event_handler(lv_event_t* e)
+{
+    LoadSavedSettings();
+    lv_dropdown_set_selected(city_dd, savedCityIndex);
+    lv_dropdown_set_selected(parameter_dd, savedParamIndex);
 }
 
 void LoadSavedSettings() {
