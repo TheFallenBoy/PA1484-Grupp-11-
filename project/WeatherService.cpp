@@ -179,7 +179,7 @@ void WeatherService::SetStationID(int ID)
             break;
         default:
             break;
-}
+    }
 }
 
 int WeatherService::GetStationID()
@@ -277,3 +277,88 @@ String WeatherService::BuildHistoricalURL()
 
 
  }
+
+std::vector<float> WeatherService::GetHourlyForecast(float lat, float lon)
+{
+    std::vector<float> temps;
+
+    if (lat == 0 || lon == 0) return temps;
+
+    // Bygg URL
+    String url = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/";
+    url += String(lon, 4);
+    url += "/lat/";
+    url += String(lat, 4);
+    url += "/data.json";
+
+    // 1. Hämta hela textmassan (String)
+    String payload = APIRequest(url);
+
+    if (payload.isEmpty()) {
+        Serial.println("VARNING: Fick tom sträng från APIRequest (Nätverksfel?)");
+        return temps;
+    }
+
+    Serial.printf("Payload storlek: %d tecken.\n", payload.length());
+
+    // 2. MANUELL TEXT-SÖKNING (Ingen ArduinoJson!)
+    // Vi letar efter mönstret: {"name":"t", ... "values":[X.X]}
+    
+    int currentIndex = 0;
+    
+    // Vi vill ha 24 timmar
+    for (int i = 0; i < 24; i++) {
+        
+        // 1. Hitta nästa "validTime" (Starten på en ny timme)
+        // Detta för att säkerställa att vi går framåt i tiden
+        int timeIndex = payload.indexOf("validTime", currentIndex);
+        if (timeIndex == -1) break; // Inga fler tider
+        
+        // Flytta fram sökningen hit
+        currentIndex = timeIndex;
+
+        // 2. Leta efter temperatur-taggen EFTER denna tidpunkt
+        // SMHI skriver: "name":"t"
+        int tIndex = payload.indexOf("\"name\":\"t\"", currentIndex);
+        
+        // Säkerhetskoll: Om vi hittar "t", kolla så det inte ligger i NÄSTA timme
+        // (En timmes block är sällan längre än 1000 tecken)
+        if (tIndex != -1 && (tIndex - currentIndex) < 2000) {
+            
+            // 3. Hitta värdet. Det ser ut så här: "values":[8.7]
+            // Vi letar efter "values":[ efter där vi hittade "t"
+            int valStartIndex = payload.indexOf("\"values\":[", tIndex);
+            
+            if (valStartIndex != -1) {
+                // Flytta fram till där siffran börjar (längden av "values":[" är 10)
+                int numberStart = valStartIndex + 10;
+                
+                // Hitta slutklammern ]
+                int numberEnd = payload.indexOf("]", numberStart);
+                
+                if (numberEnd != -1) {
+                    // Klipp ut strängen, t.ex. "8.7"
+                    String tempStr = payload.substring(numberStart, numberEnd);
+                    float tempVal = tempStr.toFloat();
+                    
+                    temps.push_back(tempVal);
+                    
+                    // Flytta fram currentIndex så vi inte hittar samma igen
+                    currentIndex = numberEnd; 
+                }
+            }
+        } else {
+            // Om vi inte hittar "t" inom rimligt avstånd, hoppa framåt ändå
+             currentIndex += 50; 
+        }
+    }
+
+    if (temps.empty()) {
+        Serial.println("VARNING: String-parsern hittade inga värden. Kolla payload:");
+        Serial.println(payload.substring(0, 300)); // Visa början av texten
+    } else {
+        Serial.printf("Succé! Parsade %d temperaturer manuellt.\n", temps.size());
+    }
+
+    return temps;
+}

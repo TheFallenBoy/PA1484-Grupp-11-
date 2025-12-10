@@ -20,6 +20,8 @@ public:
     // Hämtar 7-dygnsprognos (eller det din URL ger)
     std::vector<ForecastDataPoint> GetSevenDayForecast();
     std::vector<float> GetHistoricalData();
+    // Ny funktion för kartan: Hämtar temp för kommande 24h för en specifik plats
+    std::vector<float> GetHourlyForecast(float lat, float lon);
     void SetStationID(int ID);
     int GetStationID();
     void SetParameterID(int ID);

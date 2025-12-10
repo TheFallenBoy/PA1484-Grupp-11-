@@ -9,11 +9,12 @@
 #include <lvgl.h>
 #include "WeatherService.h"
 #include <Preferences.h>
+#include "SwedenMap.h"
 //#include "secrets.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "Säpo spårningsbil";
-static const char* WIFI_PASSWORD = "Internet";
+static const char* WIFI_SSID     = "";
+static const char* WIFI_PASSWORD = "";
 
 LilyGo_Class amoled;
 
@@ -22,6 +23,7 @@ static lv_obj_t* t0;
 static lv_obj_t* t1;
 static lv_obj_t* t2;
 static lv_obj_t* t3;
+static lv_obj_t* t4;
 static lv_obj_t* t0_label;
 static lv_obj_t* t1_label;
 static lv_obj_t* t2_label;
@@ -43,7 +45,7 @@ static bool needUpdateHistory = false;
 static lv_obj_t* chart;
 static lv_chart_series_t* ser1;
 std::vector<float> historyDataPoint;
-static WeatherService ws;
+WeatherService ws;
 
 // Function: Tile #2 Color change
 static void apply_tile_colors(lv_obj_t* tile, lv_obj_t* label, bool dark)
@@ -156,12 +158,15 @@ static void create_ui()
   t1 = lv_tileview_add_tile(tileview, 1, 0, LV_DIR_HOR); // Forecast
   t2 = lv_tileview_add_tile(tileview, 2, 0, LV_DIR_HOR); // History
   t3 = lv_tileview_add_tile(tileview, 3, 0, LV_DIR_HOR); // Settings
+  t4 = lv_tileview_add_tile(tileview, 4, 0, LV_DIR_HOR); // Map Tile
+  
   
   // 3. Setup individual tiles using helper functions
   setup_boot_tile(t0);
   setup_forecast_tile(t1);
   setup_history_tile(t2);
   setup_settings_tile(t3);
+  setup_map_tile(t4);
 }
 
 // --- Tile #0: Boot Screen ---
@@ -402,7 +407,17 @@ void LoadSavedSettings()
 
 static void UpdateUI()
 {
-  std::vector<ForecastDataPoint> forecastData = ws.GetSevenDayForecast(); 
+  std::vector<ForecastDataPoint> forecastData = ws.GetSevenDayForecast();
+  // Säkerhetskoll: Om vi inte fick någon data (pga inget WiFi), avbryt.
+  if (forecastData.empty()) {
+      Serial.println("[UpdateUI] Ingen väderdata hämtades (Check WiFi), avbryter UI-uppdatering.");
+      
+      // Valfritt: Sätt en text på skärmen så man vet vad som hände
+      lv_label_set_text(t1_label, "No WiFi / No Data");
+      
+      return; // VIKTIGT: Hoppa ur funktionen här så vi inte kraschar nedanför
+  }
+  
   for (int i = 0; i < 7; i++)
   {
     lv_label_set_text(dayLabel[i], forecastData[i].weekday);
@@ -411,6 +426,13 @@ static void UpdateUI()
   }
   lv_label_set_text(t1_label, ws.city.c_str());
   historyDataPoint = ws.GetHistoricalData();
+
+// --- NY SÄKERHETSKOLL FÖR HISTORIK ---
+  if (historyDataPoint.empty()) {
+      Serial.println("[UpdateUI] Ingen historik-data.");
+      return; 
+  }
+
   //AI genererat gemini 3 pro
   // 1. Räkna ut min/max värde i datan för att skala Y-axeln snyggt
   float minVal = 1000;
@@ -489,4 +511,6 @@ void loop()
     UpdateUI();
     
   }
+  // Lägg till animationen
+  animate_map_loop();
 }
