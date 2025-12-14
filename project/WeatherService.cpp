@@ -12,7 +12,7 @@ WeatherService::WeatherService()
 
 String WeatherService::BuildURL()
 {
-    // specifika URL (snow1g)
+    // Specific URL (snow1g)
     String url = "https://opendata-download-metfcst.smhi.se/api/category/snow1g/version/1/geotype/point/lon/";
     url += String(currentLongitude, 6);
     url += "/lat/";
@@ -284,14 +284,14 @@ std::vector<float> WeatherService::GetHourlyForecast(float lat, float lon)
 
     if (lat == 0 || lon == 0) return temps;
 
-    // Bygg URL
+    // Build URL
     String url = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/";
     url += String(lon, 4);
     url += "/lat/";
     url += String(lat, 4);
     url += "/data.json";
 
-    // 1. Hämta hela textmassan (String)
+    // 1. Fetch all text (String)
     String payload = APIRequest(url);
 
     if (payload.isEmpty()) {
@@ -301,43 +301,37 @@ std::vector<float> WeatherService::GetHourlyForecast(float lat, float lon)
 
     Serial.printf("Payload storlek: %d tecken.\n", payload.length());
 
-    // 2. MANUELL TEXT-SÖKNING (Ingen ArduinoJson!)
-    // Vi letar efter mönstret: {"name":"t", ... "values":[X.X]}
+    // 2. Manual text search
     
     int currentIndex = 0;
     
-    // Vi vill ha 24 timmar
     for (int i = 0; i < 24; i++) {
         
-        // 1. Hitta nästa "validTime" (Starten på en ny timme)
-        // Detta för att säkerställa att vi går framåt i tiden
+        // 1. Find next 'validTime'
         int timeIndex = payload.indexOf("validTime", currentIndex);
-        if (timeIndex == -1) break; // Inga fler tider
+        if (timeIndex == -1) break; 
         
-        // Flytta fram sökningen hit
+        // Move Search
         currentIndex = timeIndex;
 
-        // 2. Leta efter temperatur-taggen EFTER denna tidpunkt
-        // SMHI skriver: "name":"t"
+        // 2. Find temp tag 't'
         int tIndex = payload.indexOf("\"name\":\"t\"", currentIndex);
         
-        // Säkerhetskoll: Om vi hittar "t", kolla så det inte ligger i NÄSTA timme
-        // (En timmes block är sällan längre än 1000 tecken)
+        // Make sure found 't' is this hour
         if (tIndex != -1 && (tIndex - currentIndex) < 2000) {
             
-            // 3. Hitta värdet. Det ser ut så här: "values":[8.7]
-            // Vi letar efter "values":[ efter där vi hittade "t"
+            // 3. Find value. ex. "values":[8.7]
+            
             int valStartIndex = payload.indexOf("\"values\":[", tIndex);
             
             if (valStartIndex != -1) {
-                // Flytta fram till där siffran börjar (längden av "values":[" är 10)
                 int numberStart = valStartIndex + 10;
                 
-                // Hitta slutklammern ]
+                // Find ]
                 int numberEnd = payload.indexOf("]", numberStart);
                 
                 if (numberEnd != -1) {
-                    // Klipp ut strängen, t.ex. "8.7"
+                    // Cut string
                     String tempStr = payload.substring(numberStart, numberEnd);
                     float tempVal = tempStr.toFloat();
                     
@@ -348,14 +342,14 @@ std::vector<float> WeatherService::GetHourlyForecast(float lat, float lon)
                 }
             }
         } else {
-            // Om vi inte hittar "t" inom rimligt avstånd, hoppa framåt ändå
+            // If 't' not found, jump ahead
              currentIndex += 50; 
         }
     }
 
     if (temps.empty()) {
         Serial.println("VARNING: String-parsern hittade inga värden. Kolla payload:");
-        Serial.println(payload.substring(0, 300)); // Visa början av texten
+        Serial.println(payload.substring(0, 300)); // Show text start
     } else {
         Serial.printf("Succé! Parsade %d temperaturer manuellt.\n", temps.size());
     }

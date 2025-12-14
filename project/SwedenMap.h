@@ -3,22 +3,22 @@
 
 #include <lvgl.h>
 #include <vector>
-#include "WeatherService.h" // Så vi kan prata med din service
+#include "WeatherService.h" 
 
-// Struct för varje landskap/region
+// Struct for every region
 struct Region {
     const char* name;
     float lat;
     float lon;
-    int x; // Pixel X på skärmen
-    int y; // Pixel Y på skärmen
-    lv_obj_t* obj; // Den lilla pricken
-    std::vector<float> temps; // 24h prognos
+    int x; // Pixel X on screen
+    int y; // Pixel Y on screen
+    lv_obj_t* obj; // Dot
+    std::vector<float> temps; // 24h forecast
 };
 
-// Funktioner som anropas från main
+// Function calls from main
 void setup_map_tile(lv_obj_t* parent);
-void update_map_data_from_api(); // Denna kommer ta tid!
-void animate_map_loop(); // Körs i loop()
+void update_map_data_from_api(); 
+void animate_map_loop(); 
 
 #endif

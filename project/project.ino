@@ -408,14 +408,13 @@ void LoadSavedSettings()
 static void UpdateUI()
 {
   std::vector<ForecastDataPoint> forecastData = ws.GetSevenDayForecast();
-  // Säkerhetskoll: Om vi inte fick någon data (pga inget WiFi), avbryt.
+  // If no data beacuse of Wifi, abort.
   if (forecastData.empty()) {
       Serial.println("[UpdateUI] Ingen väderdata hämtades (Check WiFi), avbryter UI-uppdatering.");
       
-      // Valfritt: Sätt en text på skärmen så man vet vad som hände
       lv_label_set_text(t1_label, "No WiFi / No Data");
       
-      return; // VIKTIGT: Hoppa ur funktionen här så vi inte kraschar nedanför
+      return;
   }
   
   for (int i = 0; i < 7; i++)
@@ -511,6 +510,6 @@ void loop()
     UpdateUI();
     
   }
-  // Lägg till animationen
+  // Map animation
   animate_map_loop();
 }
