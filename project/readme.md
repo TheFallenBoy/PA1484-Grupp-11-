@@ -46,15 +46,15 @@ Most weather apps show either too little information or are cluttered. This devi
 ### How to build and upload
 1.  Connect the ESP32 to your computer via USB.
 2.  Click the **PlatformIO icon** (Ant Icon) in the VS Code sidebar.
-3.  Click **Build** (Checkmark icon) to compile.
-4.  Click **Upload** (Arrow icon) to flash the firmware.
-5.  Open the **Serial Monitor** (Plug icon) to view debug logs.
+3.  Click **Build** (Checkmark icon) at the bottom of the window to compile.
+4.  Click **Upload** (Arrow icon) at the bottom of the window to flash the firmware.
+5.  Open the **Serial Monitor** (Plug icon) at the bottom of the window to view debug logs.
 
 ### Operating the Program
-The interface is touch-based. You navigate by swiping or tapping:
+The interface is touch-based, you navigate by swiping or tapping:
 * **Swipe Left/Right/Up/Down:** Navigate between the 4 main tiles and scrolling where applicable.
 * **Forecast Tile:** Automatically updates based on the selected city.
-* **Settings Tile:** Use the dropdowns/buttons to change the active **City** (Karlskrona, Stockholm, Gothenburg, Malmo, Kiruna) and **Parameter** (Temp, Wind, Humidity, Pressure).
+* **Settings Tile:** Use the dropdowns/buttons to change the active **City** (Karlskrona, Stockholm, Gothenburg, Malmö, Kiruna) and **Parameter** (Temperature, Wind, Humidity, Pressure). Press save to set new default settings and reset to return to default.
 * **Map Tile:** Tap the "Get Data" button to refresh the national forecast, this may take up to several minutes.
   
 
