@@ -13,8 +13,8 @@
 //#include "secrets.h"
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
-static const char* WIFI_SSID     = "";
-static const char* WIFI_PASSWORD = "";
+static const char* WIFI_SSID     = "YOUR_SSID";
+static const char* WIFI_PASSWORD = "YOUR_PASSWORD";
 
 LilyGo_Class amoled;
 
