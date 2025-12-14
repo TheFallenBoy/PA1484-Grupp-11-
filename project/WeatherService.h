@@ -15,12 +15,11 @@ struct ForecastDataPoint {
 
 class WeatherService {
 public:
-    WeatherService();
-    
-    // Hämtar 7-dygnsprognos (eller det din URL ger)
+    WeatherService();   
     std::vector<ForecastDataPoint> GetSevenDayForecast();
+
     std::vector<float> GetHistoricalData();
-    // Ny funktion för kartan: Hämtar temp för kommande 24h för en specifik plats
+
     std::vector<float> GetHourlyForecast(float lat, float lon);
     void SetStationID(int ID);
     int GetStationID();
@@ -35,10 +34,9 @@ private:
     float currentLongitude;
     float currentLatitude;
     String currentParameter;
-
-    // Bygger din specifika URL
+   
+    
     String BuildURL();
-    // Anropar nätverket
     String APIRequest(String URL);
     void SetWhatDay(struct ForecastDataPoint &datapoint);
     int getWeekday(int year, int month, int day);

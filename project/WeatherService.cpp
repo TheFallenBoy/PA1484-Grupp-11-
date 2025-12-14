@@ -103,15 +103,15 @@ std::vector<ForecastDataPoint> WeatherService::GetSevenDayForecast()
     JsonArray series = doc["timeSeries"];
     
     for (JsonObject item : series) {
-       // 1. Om vi redan har 7 dagar, sluta leta för att spara tid/minne
+       // 1. check if we already have 7 days
         if (forecastData.size() >= 7) {
             break;
         }
 
-        const char* timeStr = item["time"]; // T.ex. "2025-11-19T12:00:00Z"
+        const char* timeStr = item["time"]; // i.e "2025-11-19T12:00:00Z"
         String t = String(timeStr);
 
-        // 2. Kolla om tiden innehåller "T12:00:00"
+        // 2. Check if time contains "T12:00:00"
         if (forecastData.size() == 0)
         { 
             //week day property will always be Today
@@ -258,7 +258,7 @@ String WeatherService::BuildHistoricalURL()
         if (error) {
             Serial.println(error.f_str());
         
-        // NYTT: Skriv ut de första 100 tecknen av payloaden för att se vad felet är
+        // Printing the first 100 characters of the payload to the Serial Monitor (debug)
             Serial.println("[JSON Payload Start] " + payload.substring(0, 100));
             return historicalDataPoints;
         }
@@ -270,7 +270,6 @@ String WeatherService::BuildHistoricalURL()
         }
         
         Serial.println(historicalDataPoints.size());
-    /* code */
     }
     
        return historicalDataPoints;

@@ -10,7 +10,7 @@
 #include "WeatherService.h"
 #include <Preferences.h>
 #include "SwedenMap.h"
-//#include "secrets.h"
+
 
 // Wi-Fi credentials (Delete these before commiting to GitHub)
 static const char* WIFI_SSID     = "YOUR_SSID";
@@ -33,7 +33,7 @@ static lv_obj_t* dayLabel[7];
 static lv_obj_t* iconImage[7];
 static lv_obj_t* paramLabel[7];
 static lv_obj_t* slider;
-static lv_obj_t* slider_label; // kanske ska lägga till en slider?
+static lv_obj_t* slider_label; 
 static lv_chart_cursor_t* cursor;
 Preferences saved_settings;
 lv_obj_t * city_dd; 
@@ -118,25 +118,23 @@ const lv_img_dsc_t* get_icon_by_id(int id)
 
 static void slider_event_cb(lv_event_t* e)
 {
-  //needUpdateHistory = true;
   lv_obj_t* slider_obj = lv_event_get_target(e);
     
-  // Säkerhetskoll: Om vi inte har någon data, gör inget
+  //Safety check to see if we actually got some data
   if (historyDataPoint.empty()) return;
 
-  // 1. Hämta index från slidern (0 = äldsta, Max = nyaste)
+  //Get index from slider, 0 is the oldest point
   int index = (int)lv_slider_get_value(slider_obj);
 
-  // Säkerställ att vi inte går utanför vektorn (kraschrisk annars!)
+  //check so that we're inside the bounds
   if (index < 0) index = 0;
   if (index >= historyDataPoint.size()) index = historyDataPoint.size() - 1;
 
-  // 2. Hämta värdet för den punkten
+  //Gets the new value
   float value = historyDataPoint[index];
 
   lv_label_set_text_fmt(slider_label, "Value: %.1f %s", value, ws.unit);
-  // 4. Flytta markören i grafen till rätt punkt
-  // Parametrar: Grafen, Markören, Serien (ser1), Indexet
+  //Move the cursor to the correct point
   lv_chart_set_cursor_point(chart, cursor, ser1, index);
 }
 
@@ -227,7 +225,7 @@ static void setup_forecast_tile(lv_obj_t* parent)
     lv_obj_set_style_border_width(day_obj, 0, 0);
       
     dayLabel[r]= lv_label_create(day_obj);
-    lv_label_set_text(dayLabel[r], "-"); // Placeholder
+    lv_label_set_text(dayLabel[r], "-"); 
     lv_obj_set_style_text_font(dayLabel[r], font, 0);
     lv_obj_center(dayLabel[r]);
 
@@ -240,7 +238,7 @@ static void setup_forecast_tile(lv_obj_t* parent)
     lv_obj_set_style_border_width(param_obj, 0, 0);
       
     paramLabel[r] = lv_label_create(param_obj);
-    lv_label_set_text(paramLabel[r], "-"); // Placeholder
+    lv_label_set_text(paramLabel[r], "-"); 
     lv_obj_set_style_text_font(paramLabel[r], font_data, 0);
     lv_obj_center(paramLabel[r]);
 
@@ -253,7 +251,7 @@ static void setup_forecast_tile(lv_obj_t* parent)
     lv_obj_set_style_border_width(icon_obj, 0, 0);
       
     iconImage[r] = lv_img_create(icon_obj);
-    lv_img_set_src(iconImage[r], &img_cloud); // Default placeholder icon
+    lv_img_set_src(iconImage[r], &img_cloud); 
     lv_obj_center(iconImage[r]);
   }
 }
@@ -391,13 +389,13 @@ void LoadSavedSettings()
   needUpdateHistory = true;  
   saved_settings.begin("weather-app", true); // true = Read Only (läsläge)
     
-  // Hämta sparade värden. "0" är standardvärdet om inget är sparat än.
+  //get the default values, if none is set the default will be zero
   savedCityIndex = saved_settings.getInt("cityIdx", 0);
   savedParamIndex = saved_settings.getInt("paramIdx", 0);
 
   saved_settings.end();
     
-  // Applicera på WeatherService direkt så vi hämtar rätt data
+  //Set the global weather service
   ws.SetStationID(savedCityIndex);
   ws.SetParameterID(savedParamIndex);
 
@@ -426,14 +424,14 @@ static void UpdateUI()
   lv_label_set_text(t1_label, ws.city.c_str());
   historyDataPoint = ws.GetHistoricalData();
 
-// --- NY SÄKERHETSKOLL FÖR HISTORIK ---
+  //check if the API Call actually worked, otherwise return
   if (historyDataPoint.empty()) {
       Serial.println("[UpdateUI] Ingen historik-data.");
       return; 
   }
 
   //AI genererat gemini 3 pro
-  // 1. Räkna ut min/max värde i datan för att skala Y-axeln snyggt
+  //Calculate min/max values for the chart.
   float minVal = 1000;
   float maxVal = -1000;
   for (float val : historyDataPoint) 
@@ -445,7 +443,6 @@ static void UpdateUI()
   lv_chart_set_point_count(chart, historyDataPoint.size());
   for (float val : historyDataPoint) 
   {
-    // LVGL tar int, så vi castar float till int (eller multiplicerar med 10 för precision om du vill trixa)
     lv_chart_set_next_value(chart, ser1, (int)val);
   }
 
@@ -453,7 +450,7 @@ static void UpdateUI()
   int newestIndex = historyDataPoint.size() - 1;
   lv_slider_set_value(slider, newestIndex, LV_ANIM_ON);
 
-  // Uppdatera även markören och texten manuellt en gång så det matchar
+  //Update the cursor on the chart
   lv_chart_set_cursor_point(chart, cursor, ser1, newestIndex);
 }
 
